@@ -5,18 +5,30 @@
     android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/backgroundColor"
     tools:context=".MainActivity">
 
-    <com.example.optimizer.PortfolioGraphView
-        android:id="@+id/portfolioGraph"
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/graphCard"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_margin="8dp"
-        android:background="#F5F5F5"
+        android:layout_margin="16dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="2dp"
+        app:strokeWidth="0dp"
         app:layout_constraintBottom_toTopOf="@+id/buttonContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent">
+
+        <com.example.optimizer.PortfolioGraphView
+            android:id="@+id/portfolioGraph"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/graphBackgroundColor"
+            android:padding="8dp" />
+
+    </com.google.android.material.card.MaterialCardView>
 
     <GridLayout
         android:id="@+id/buttonContainer"
@@ -24,42 +36,58 @@
         android:layout_height="wrap_content"
         android:columnCount="2"
         android:rowCount="2"
-        android:padding="8dp"
+        android:padding="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnApiKey"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
-            android:text="API Key" />
+            android:text="API Key"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/primaryColor"
+            app:cornerRadius="8dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddRemove"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
-            android:text="Add/remove" />
+            android:text="Assets"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/primaryColor"
+            app:cornerRadius="8dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSync"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
-            android:text="Sync" />
+            android:text="Sync"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/secondaryColor"
+            app:cornerRadius="8dp" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnOptimize"
+            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_columnWeight="1"
             android:layout_margin="4dp"
-            android:text="Optimize" />
+            android:text="Optimize"
+            android:textColor="@color/white"
+            app:backgroundTint="@color/secondaryColor"
+            app:cornerRadius="8dp" />
 
     </GridLayout>
 

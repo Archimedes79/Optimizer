@@ -5,10 +5,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:padding="16dp"
+    android:background="@color/backgroundColor"
     tools:context=".ManageSecuritiesActivity">
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilIdentifier"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="WKN or ISIN"
@@ -26,6 +28,7 @@
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilQuantity"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
@@ -44,6 +47,7 @@
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilCustomName"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
@@ -58,12 +62,13 @@
             android:layout_height="wrap_content" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnAddSecurity"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
         android:layout_marginStart="8dp"
         android:text="Add"
+        app:backgroundTint="@color/primaryColor"
         app:layout_constraintBottom_toBottomOf="@+id/tilCustomName"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@id/tilCustomName"
@@ -90,12 +95,13 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/pbSearching" />
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/btnDone"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
         android:text="Back to Portfolio"
+        app:backgroundTint="@color/secondaryColor"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
