@@ -3,6 +3,8 @@ package com.example.optimizer;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
@@ -20,7 +22,6 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 
@@ -29,6 +30,7 @@ public class PortfolioGraphView extends FrameLayout {
     private LineChart chart;
     private final int[] colors = {Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.CYAN, Color.MAGENTA, Color.LTGRAY, Color.DKGRAY};
     private int currentMaxEntries = 240;
+    private float currentVisibleCount = 240;
     private PortfolioMarkerView markerView;
 
     public PortfolioGraphView(@NonNull Context context) {
@@ -47,10 +49,12 @@ public class PortfolioGraphView extends FrameLayout {
 
         chart.getDescription().setEnabled(false);
         chart.setTouchEnabled(true);
-        chart.setDragEnabled(true);
-        chart.setScaleEnabled(true);
-        chart.setPinchZoom(true);
+        chart.setDragEnabled(false); // Using custom zoom logic
+        chart.setScaleEnabled(false); // Using custom zoom logic
+        chart.setPinchZoom(false);
+        chart.setDoubleTapToZoomEnabled(false);
         chart.setDrawGridBackground(false);
+        chart.setAutoScaleMinMaxEnabled(true); // Y-axis scales to visible data
 
         XAxis xAxis = chart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
@@ -60,15 +64,60 @@ public class PortfolioGraphView extends FrameLayout {
 
         YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
-        
-        // Disable right axis as we now use a single scale
-        YAxis rightAxis = chart.getAxisRight();
-        rightAxis.setEnabled(false);
+        chart.getAxisRight().setEnabled(false);
 
         markerView = new PortfolioMarkerView(context, R.layout.graph_marker, currentMaxEntries);
         chart.setMarker(markerView);
 
         chart.getLegend().setEnabled(true);
+
+        // Custom Zoom/Drag Logic
+        chart.setOnTouchListener(new OnTouchListener() {
+            private float startX;
+            private float startVisibleCount;
+
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_DOWN:
+                        startX = event.getX();
+                        startVisibleCount = currentVisibleCount;
+                        chart.onTouchEvent(event); // Still allow chart to handle markers
+                        return true;
+                    case MotionEvent.ACTION_MOVE:
+                        float dx = event.getX() - startX;
+                        // Sensitivity: Dragging across the full width represents the full data range
+                        float sensitivity = (float) currentMaxEntries / chart.getWidth();
+                        
+                        // Shift Right (dx > 0) -> Zoom Out (Increase visible count)
+                        // Shift Left (dx < 0) -> Zoom In (Decrease visible count)
+                        currentVisibleCount = startVisibleCount + dx * sensitivity;
+                        
+                        // Bounds: Min 5 points to Max available points
+                        if (currentVisibleCount < 5) currentVisibleCount = 5;
+                        if (currentVisibleCount > currentMaxEntries) currentVisibleCount = currentMaxEntries;
+                        
+                        applyZoom();
+                        chart.onTouchEvent(event);
+                        return true;
+                    case MotionEvent.ACTION_UP:
+                    case MotionEvent.ACTION_CANCEL:
+                        chart.onTouchEvent(event);
+                        return true;
+                }
+                return false;
+            }
+        });
+    }
+
+    private void applyZoom() {
+        if (chart.getData() == null) return;
+        
+        // Force the window to always end at the most recent date (currentMaxEntries - 1)
+        chart.setVisibleXRangeMaximum(currentVisibleCount);
+        chart.setVisibleXRangeMinimum(currentVisibleCount);
+        chart.moveViewToX(currentMaxEntries - currentVisibleCount);
+        chart.invalidate();
     }
 
     public void setSecurities(List<Security> securities) {
@@ -86,7 +135,6 @@ public class PortfolioGraphView extends FrameLayout {
             return;
         }
 
-        // Find the MINIMUM number of entries to truncate the chart to the common period
         int minEntries = Integer.MAX_VALUE;
         for (Security s : securities) {
             minEntries = Math.min(minEntries, s.getValuesOverTime().size());
@@ -97,22 +145,28 @@ public class PortfolioGraphView extends FrameLayout {
             return;
         }
 
+        int previousMaxEntries = this.currentMaxEntries;
         this.currentMaxEntries = minEntries;
-        if (markerView != null) {
-            markerView.setMaxEntries(minEntries);
+        
+        // Maintain current zoom percentage if data range changed
+        if (previousMaxEntries != minEntries) {
+            float zoomRatio = currentVisibleCount / previousMaxEntries;
+            currentVisibleCount = minEntries * zoomRatio;
         }
+        
+        if (currentVisibleCount > minEntries) currentVisibleCount = minEntries;
+        if (currentVisibleCount < 5) currentVisibleCount = 5;
 
-        // Calculate last total value for normalization
+        if (markerView != null) markerView.setMaxEntries(minEntries);
+
         float lastTotalValue = 0;
         for (int i = 0; i < securities.size(); i++) {
-            Security s = securities.get(i);
-            List<Double> values = s.getValuesOverTime();
+            List<Double> values = securities.get(i).getValuesOverTime();
             lastTotalValue += (float) (values.get(values.size() - 1) * quantities[i]);
         }
 
         List<ILineDataSet> dataSets = new ArrayList<>();
 
-        // Individual lines - Normalized to 100 at the END
         for (int i = 0; i < securities.size(); i++) {
             Security s = securities.get(i);
             List<Double> values = s.getValuesOverTime();
@@ -121,7 +175,6 @@ public class PortfolioGraphView extends FrameLayout {
             
             List<Entry> entries = new ArrayList<>();
             for (int j = 0; j < minEntries; j++) {
-                // Normalization: (current_price / last_price) * 100
                 float normalizedValue = (float) ((values.get(startIdx + j) / lastValue) * 100.0);
                 entries.add(new Entry(j, normalizedValue));
             }
@@ -131,20 +184,16 @@ public class PortfolioGraphView extends FrameLayout {
             set.setColor(Color.argb(120, Color.red(color), Color.green(color), Color.blue(color)));
             set.setDrawCircles(false);
             set.setLineWidth(1.0f);
-            set.setAxisDependency(YAxis.AxisDependency.LEFT);
             dataSets.add(set);
         }
 
-        // Total line - Normalized to 100 at the END
         List<Entry> totalEntries = new ArrayList<>();
         if (lastTotalValue > 0) {
             for (int j = 0; j < minEntries; j++) {
                 float sum = 0;
                 for (int i = 0; i < securities.size(); i++) {
-                    Security s = securities.get(i);
-                    List<Double> values = s.getValuesOverTime();
-                    int startIdx = values.size() - minEntries;
-                    sum += (float) (values.get(startIdx + j) * quantities[i]);
+                    List<Double> values = securities.get(i).getValuesOverTime();
+                    sum += (float) (values.get(values.size() - minEntries + j) * quantities[i]);
                 }
                 totalEntries.add(new Entry(j, (sum / lastTotalValue) * 100.0f));
             }
@@ -154,12 +203,15 @@ public class PortfolioGraphView extends FrameLayout {
         totalSet.setColor(Color.BLACK);
         totalSet.setLineWidth(3f);
         totalSet.setDrawCircles(false);
-        totalSet.setAxisDependency(YAxis.AxisDependency.LEFT);
         dataSets.add(totalSet);
 
-        LineData data = new LineData(dataSets);
-        chart.setData(data);
-        chart.invalidate();
+        chart.setData(new LineData(dataSets));
+        
+        XAxis xAxis = chart.getXAxis();
+        xAxis.setAxisMinimum(0);
+        xAxis.setAxisMaximum(minEntries - 1);
+        
+        applyZoom();
     }
 
     private class DateFormatter extends ValueFormatter {
@@ -168,11 +220,9 @@ public class PortfolioGraphView extends FrameLayout {
         @Override
         public String getFormattedValue(float value) {
             Calendar cal = Calendar.getInstance();
-            // Today corresponds to the last index (currentMaxEntries - 1)
             int monthsBack = (currentMaxEntries - 1) - (int) value;
             cal.add(Calendar.MONTH, -monthsBack);
-            Date date = cal.getTime();
-            return monthFormat.format(date);
+            return monthFormat.format(cal.getTime());
         }
     }
 }
