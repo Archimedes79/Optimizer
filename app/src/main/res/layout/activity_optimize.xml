@@ -11,14 +11,28 @@
         android:layout_height="300dp" />
 
     <TextView
-        android:id="@+id/tvSliderLabel"
+        android:id="@+id/tvVarLabel"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:text="Target Allocation: 0%" />
+        android:text="Minimum Variance Allocation: 0%" />
 
     <SeekBar
         android:id="@+id/sbReduceVariance"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:max="100"
+        android:progress="0" />
+
+    <TextView
+        android:id="@+id/tvExpLabel"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="Maximum Expectation Allocation: 0%" />
+
+    <SeekBar
+        android:id="@+id/sbMaxExpectation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:max="100"
@@ -31,7 +45,7 @@
         android:layout_weight="1"
         android:layout_marginTop="16dp"
         android:scrollbars="vertical"
-        android:text="Quantities:" />
+        android:text="Required Quantities:" />
 
     <Button
         android:id="@+id/btnBack"
