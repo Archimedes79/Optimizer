@@ -61,11 +61,9 @@ public class PortfolioGraphView extends FrameLayout {
         YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
         
-        // Right axis for normalized values (starting at 100)
+        // Disable right axis as we now use a single scale
         YAxis rightAxis = chart.getAxisRight();
-        rightAxis.setEnabled(true);
-        rightAxis.setDrawGridLines(false);
-        rightAxis.setAxisMinimum(0f);
+        rightAxis.setEnabled(false);
 
         markerView = new PortfolioMarkerView(context, R.layout.graph_marker, currentMaxEntries);
         chart.setMarker(markerView);
@@ -104,21 +102,27 @@ public class PortfolioGraphView extends FrameLayout {
             markerView.setMaxEntries(minEntries);
         }
 
-        List<ILineDataSet> dataSets = new ArrayList<>();
-
-        // Individual lines - Normalized to 100 at the START of the truncated (common) period
+        // Calculate last total value for normalization
+        float lastTotalValue = 0;
         for (int i = 0; i < securities.size(); i++) {
             Security s = securities.get(i);
             List<Double> values = s.getValuesOverTime();
-            
-            // Start index in the original values list for the common period
+            lastTotalValue += (float) (values.get(values.size() - 1) * quantities[i]);
+        }
+
+        List<ILineDataSet> dataSets = new ArrayList<>();
+
+        // Individual lines - Normalized to 100 at the END
+        for (int i = 0; i < securities.size(); i++) {
+            Security s = securities.get(i);
+            List<Double> values = s.getValuesOverTime();
             int startIdx = values.size() - minEntries;
-            double baseValue = values.get(startIdx);
+            double lastValue = values.get(values.size() - 1);
             
             List<Entry> entries = new ArrayList<>();
             for (int j = 0; j < minEntries; j++) {
-                // Normalization: (current_price / start_of_common_period_price) * 100
-                float normalizedValue = (float) ((values.get(startIdx + j) / baseValue) * 100.0);
+                // Normalization: (current_price / last_price) * 100
+                float normalizedValue = (float) ((values.get(startIdx + j) / lastValue) * 100.0);
                 entries.add(new Entry(j, normalizedValue));
             }
             
@@ -127,24 +131,26 @@ public class PortfolioGraphView extends FrameLayout {
             set.setColor(Color.argb(120, Color.red(color), Color.green(color), Color.blue(color)));
             set.setDrawCircles(false);
             set.setLineWidth(1.0f);
-            set.setAxisDependency(YAxis.AxisDependency.RIGHT);
+            set.setAxisDependency(YAxis.AxisDependency.LEFT);
             dataSets.add(set);
         }
 
-        // Total line - Absolute Portfolio Value based on quantities over the common period
+        // Total line - Normalized to 100 at the END
         List<Entry> totalEntries = new ArrayList<>();
-        for (int j = 0; j < minEntries; j++) {
-            float sum = 0;
-            for (int i = 0; i < securities.size(); i++) {
-                Security s = securities.get(i);
-                List<Double> values = s.getValuesOverTime();
-                int startIdx = values.size() - minEntries;
-                sum += (float) (values.get(startIdx + j) * quantities[i]);
+        if (lastTotalValue > 0) {
+            for (int j = 0; j < minEntries; j++) {
+                float sum = 0;
+                for (int i = 0; i < securities.size(); i++) {
+                    Security s = securities.get(i);
+                    List<Double> values = s.getValuesOverTime();
+                    int startIdx = values.size() - minEntries;
+                    sum += (float) (values.get(startIdx + j) * quantities[i]);
+                }
+                totalEntries.add(new Entry(j, (sum / lastTotalValue) * 100.0f));
             }
-            totalEntries.add(new Entry(j, sum));
         }
 
-        LineDataSet totalSet = new LineDataSet(totalEntries, "Total Portfolio Value");
+        LineDataSet totalSet = new LineDataSet(totalEntries, "Portfolio Index");
         totalSet.setColor(Color.BLACK);
         totalSet.setLineWidth(3f);
         totalSet.setDrawCircles(false);
