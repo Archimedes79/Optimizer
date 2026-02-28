@@ -14,13 +14,14 @@ import java.util.List;
 public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuritiesAdapter.ViewHolder> {
 
     private List<Security> securities;
-    private OnSecurityRemovedListener listener;
+    private OnSecurityActionListener listener;
 
-    public interface OnSecurityRemovedListener {
+    public interface OnSecurityActionListener {
         void onSecurityRemoved(Security security);
+        void onSecurityClicked(Security security);
     }
 
-    public ManageSecuritiesAdapter(List<Security> securities, OnSecurityRemovedListener listener) {
+    public ManageSecuritiesAdapter(List<Security> securities, OnSecurityActionListener listener) {
         this.securities = securities;
         this.listener = listener;
     }
@@ -43,6 +44,12 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         holder.btnRemove.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onSecurityRemoved(security);
+            }
+        });
+
+        holder.itemView.setOnClickListener(v -> {
+            if (listener != null) {
+                listener.onSecurityClicked(security);
             }
         });
     }
