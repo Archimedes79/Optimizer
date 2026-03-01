@@ -3,8 +3,6 @@ package com.example.optimizer;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -13,6 +11,7 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 public class ApiKeyActivity extends AppCompatActivity {
@@ -25,11 +24,14 @@ public class ApiKeyActivity extends AppCompatActivity {
     private Button btnSaveKey;
     private Button btnCancel;
     private ProgressBar pbTesting;
+    private AlphaVantageService alphaVantageService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_api_key);
+
+        alphaVantageService = new AlphaVantageService();
 
         // Enable the back button in the title bar
         if (getSupportActionBar() != null) {
@@ -73,20 +75,35 @@ public class ApiKeyActivity extends AppCompatActivity {
         pbTesting.setVisibility(View.VISIBLE);
         btnTestKey.setEnabled(false);
 
-        // Simulate network call to test API key
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            pbTesting.setVisibility(View.GONE);
-            btnTestKey.setEnabled(true);
-
-            // For now, any non-empty key longer than 5 chars is "valid"
-            if (key.length() > 5) {
-                Toast.makeText(this, "API Key is valid!", Toast.LENGTH_SHORT).show();
-                btnSaveKey.setEnabled(true);
-            } else {
-                Toast.makeText(this, "Invalid API Key. Try a longer one.", Toast.LENGTH_SHORT).show();
-                btnSaveKey.setEnabled(false);
+        alphaVantageService.checkKey(key, new AlphaVantageService.Callback<Boolean>() {
+            @Override
+            public void onSuccess(Boolean isValid) {
+                pbTesting.setVisibility(View.GONE);
+                btnTestKey.setEnabled(true);
+                if (isValid) {
+                    Toast.makeText(ApiKeyActivity.this, "API Key is valid!", Toast.LENGTH_SHORT).show();
+                    btnSaveKey.setEnabled(true);
+                } else {
+                    Toast.makeText(ApiKeyActivity.this, "Invalid API Key or Rate Limit reached.", Toast.LENGTH_SHORT).show();
+                    btnSaveKey.setEnabled(false);
+                }
             }
-        }, 2000);
+
+            @Override
+            public void onError(String errorMessage) {
+                pbTesting.setVisibility(View.GONE);
+                btnTestKey.setEnabled(true);
+                showErrorDialog("Error Testing Key", errorMessage);
+            }
+        });
+    }
+
+    private void showErrorDialog(String title, String message) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
     }
 
     private void saveApiKey() {

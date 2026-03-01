@@ -3,8 +3,6 @@ package com.example.optimizer;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.MenuItem;
@@ -15,12 +13,10 @@ import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
-import java.util.HashMap;
-import java.util.Map;
 
 public class ManageSecuritiesActivity extends AppCompatActivity {
 
@@ -34,21 +30,10 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
     private ManageSecuritiesAdapter adapter;
     private Portfolio portfolio;
     private Security editingSecurity = null;
+    private AlphaVantageService alphaVantageService;
 
     private static final String PREFS_NAME = "OptimizerPrefs";
     private static final String KEY_API_KEY = "api_key";
-
-    private static final Map<String, String> MOCK_DB = new HashMap<>();
-    static {
-        MOCK_DB.put("AAPL", "Apple Inc.");
-        MOCK_DB.put("MSFT", "Microsoft Corp.");
-        MOCK_DB.put("GOOGL", "Alphabet Inc.");
-        MOCK_DB.put("AMZN", "Amazon.com Inc.");
-        MOCK_DB.put("TSLA", "Tesla Inc.");
-        MOCK_DB.put("VUSA", "Vanguard S&P 500 ETF");
-        MOCK_DB.put("VWRL", "Vanguard FTSE All-World");
-        MOCK_DB.put("840400", "Allianz SE");
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,6 +46,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         }
 
         portfolio = Portfolio.getInstance();
+        alphaVantageService = new AlphaVantageService();
 
         etIdentifier = findViewById(R.id.etIdentifier);
         etQuantity = findViewById(R.id.etQuantity);
@@ -140,7 +126,6 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             return;
         }
 
-        // Add new logic
         SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         String apiKey = prefs.getString(KEY_API_KEY, "");
 
@@ -157,26 +142,39 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         pbSearching.setVisibility(View.VISIBLE);
         btnAdd.setEnabled(false);
 
-        new Handler(Looper.getMainLooper()).postDelayed(() -> {
-            pbSearching.setVisibility(View.GONE);
-            btnAdd.setEnabled(true);
+        alphaVantageService.addSecurity(identifier, quantity, apiKey, new AlphaVantageService.Callback<Security>() {
+            @Override
+            public void onSuccess(Security newSecurity) {
+                pbSearching.setVisibility(View.GONE);
+                btnAdd.setEnabled(true);
 
-            String dbName = MOCK_DB.getOrDefault(identifier, "Unknown Security (" + identifier + ")");
+                if (!customName.isEmpty()) {
+                    newSecurity.setCustomName(customName);
+                }
 
-            Security newSecurity = new Security(dbName, identifier, quantity);
-            if (!customName.isEmpty()) {
-                newSecurity.setCustomName(customName);
+                if (portfolio.addSecurity(newSecurity)) {
+                    portfolio.save(ManageSecuritiesActivity.this);
+                    adapter.notifyItemInserted(portfolio.getSecurities().size() - 1);
+                    clearInputs();
+                    Toast.makeText(ManageSecuritiesActivity.this, "Added: " + newSecurity.getName(), Toast.LENGTH_SHORT).show();
+                }
             }
 
-            newSecurity.refreshData();
-
-            if (portfolio.addSecurity(newSecurity)) {
-                portfolio.save(this);
-                adapter.notifyItemInserted(portfolio.getSecurities().size() - 1);
-                clearInputs();
-                Toast.makeText(this, "Added: " + newSecurity.getName(), Toast.LENGTH_SHORT).show();
+            @Override
+            public void onError(String errorMessage) {
+                pbSearching.setVisibility(View.GONE);
+                btnAdd.setEnabled(true);
+                showErrorDialog("Error Adding Security", errorMessage);
             }
-        }, 800);
+        });
+    }
+
+    private void showErrorDialog(String title, String message) {
+        new AlertDialog.Builder(this)
+                .setTitle(title)
+                .setMessage(message)
+                .setPositiveButton("OK", null)
+                .show();
     }
 
     private void clearInputs() {
