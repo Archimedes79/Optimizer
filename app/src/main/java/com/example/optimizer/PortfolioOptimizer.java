@@ -64,23 +64,23 @@ public class PortfolioOptimizer {
                 double mdd = 0;
                 double sumPeriodic = 0;
                 List<Double> periodicReturns = new ArrayList<>();
-                
+
                 for (int j = 1; j < values.size(); j++) {
                     double val = values.get(j);
                     double prev = values.get(j - 1);
                     double r = (val - prev) / prev;
                     periodicReturns.add(r);
                     sumPeriodic += r;
-                    
+
                     if (val > peak) peak = val;
                     double dd = (peak - val) / peak;
                     if (dd > mdd) mdd = dd;
                 }
-                
+
                 double avgPeriodic = sumPeriodic / periodicReturns.size();
                 double sqSum = 0;
                 for (double r : periodicReturns) sqSum += (r - avgPeriodic) * (r - avgPeriodic);
-                
+
                 variances[i] = sqSum / periodicReturns.size();
                 maxDrawdowns[i] = Math.max(0.01, mdd);
             } else {
@@ -93,7 +93,7 @@ public class PortfolioOptimizer {
         // 1. Min Var Weights
         double invVarSum = 0;
         for (double v : variances) if (v > 0) invVarSum += (1.0 / v);
-        
+
         // 2. Max Exp Index
         int bestExpIdx = 0;
         for (int i = 1; i < n; i++) {
@@ -108,7 +108,7 @@ public class PortfolioOptimizer {
             if (latestPrices[i] > 0) {
                 double vWeight = (variances[i] > 0) ? (1.0 / variances[i]) / invVarSum : 0;
                 minVarQuantities[i] = (currentTotalValue * vWeight) / latestPrices[i];
-                
+
                 double eWeight = (i == bestExpIdx) ? 1.0 : 0.0;
                 maxExpQuantities[i] = (currentTotalValue * eWeight) / latestPrices[i];
 
@@ -127,8 +127,8 @@ public class PortfolioOptimizer {
         double[] blended = new double[n];
         
         for (int i = 0; i < n; i++) {
-            blended[i] = (currentQuantities[i] * currentFactor) + 
-                         (minVarQuantities[i] * varFactor) + 
+            blended[i] = (currentQuantities[i] * currentFactor) +
+                         (minVarQuantities[i] * varFactor) +
                          (maxExpQuantities[i] * expFactor) +
                          (minDrawdownQuantities[i] * mddFactor);
         }

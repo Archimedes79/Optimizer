@@ -9,7 +9,7 @@
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/graphCard"
         android:layout_width="0dp"
-        android:layout_height="250dp"
+        android:layout_height="320dp"
         app:cardCornerRadius="12dp"
         app:cardElevation="2dp"
         app:strokeWidth="0dp"
