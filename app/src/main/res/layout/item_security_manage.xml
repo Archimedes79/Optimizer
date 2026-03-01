@@ -63,6 +63,15 @@
                 android:visibility="gone" />
 
             <TextView
+                android:id="@+id/tvManageAlias"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray"
+                android:text="Search: "
+                android:visibility="gone" />
+
+            <TextView
                 android:id="@+id/tvManageIdentifier"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"

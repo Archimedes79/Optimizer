@@ -1,7 +1,5 @@
 package com.example.optimizer;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -30,10 +28,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
     private ManageSecuritiesAdapter adapter;
     private Portfolio portfolio;
     private Security editingSecurity = null;
-    private AlphaVantageService alphaVantageService;
-
-    private static final String PREFS_NAME = "OptimizerPrefs";
-    private static final String KEY_API_KEY = "api_key";
+    private YahooFinanceService yahooFinanceService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,7 +41,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         }
 
         portfolio = Portfolio.getInstance();
-        alphaVantageService = new AlphaVantageService();
+        yahooFinanceService = new YahooFinanceService();
 
         etIdentifier = findViewById(R.id.etIdentifier);
         etQuantity = findViewById(R.id.etQuantity);
@@ -74,10 +69,10 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 editingSecurity = security;
                 etIdentifier.setText(security.getIdentifier());
                 etQuantity.setText(String.valueOf(security.getQuantity()));
-                etCustomName.setText(security.getCustomName() != null ? security.getCustomName() : "");
+                etCustomName.setText(security.getAlias() != null ? security.getAlias() : "");
                 viewColorPreview.setBackgroundColor(security.getColor());
                 btnAdd.setText("Update");
-                etIdentifier.setEnabled(false);
+                etIdentifier.setEnabled(true);
             }
         });
 
@@ -104,67 +99,62 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
     }
 
     private void searchAndAddOrUpdateSecurity() {
-        String identifier = etIdentifier.getText().toString().trim().toUpperCase();
+        String identifierInput = etIdentifier.getText().toString().trim().toUpperCase();
         String qtyStr = etQuantity.getText().toString().trim();
-        String customName = etCustomName.getText().toString().trim();
+        String aliasInput = etCustomName.getText().toString().trim();
 
-        if (identifier.isEmpty() || qtyStr.isEmpty()) {
+        if (identifierInput.isEmpty() || qtyStr.isEmpty()) {
             Toast.makeText(this, "Please enter both ID and Quantity", Toast.LENGTH_SHORT).show();
             return;
         }
 
         int quantity = Integer.parseInt(qtyStr);
 
-        if (editingSecurity != null) {
-            // Update existing
-            editingSecurity.setQuantity(quantity);
-            editingSecurity.setCustomName(customName.isEmpty() ? null : customName);
-            portfolio.save(this);
-            adapter.notifyDataSetChanged();
-            Toast.makeText(this, "Updated: " + editingSecurity.getName(), Toast.LENGTH_SHORT).show();
-            clearInputs();
-            return;
-        }
-
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String apiKey = prefs.getString(KEY_API_KEY, "");
-
-        if (apiKey.isEmpty()) {
-            Toast.makeText(this, "Please set an API Key first", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
-        if (portfolio.getSecurities().size() >= 24) {
-            Toast.makeText(this, "Limit of 24 securities reached", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         pbSearching.setVisibility(View.VISIBLE);
         btnAdd.setEnabled(false);
 
-        alphaVantageService.addSecurity(identifier, quantity, apiKey, new AlphaVantageService.Callback<Security>() {
+        yahooFinanceService.addSecurity(identifierInput, aliasInput, quantity, new YahooFinanceService.Callback<Security>() {
             @Override
             public void onSuccess(Security newSecurity) {
-                pbSearching.setVisibility(View.GONE);
-                btnAdd.setEnabled(true);
+                runOnUiThread(() -> {
+                    pbSearching.setVisibility(View.GONE);
+                    btnAdd.setEnabled(true);
 
-                if (!customName.isEmpty()) {
-                    newSecurity.setCustomName(customName);
-                }
+                    if (editingSecurity != null) {
+                        editingSecurity.setName(newSecurity.getName());
+                        editingSecurity.setIdentifier(newSecurity.getIdentifier());
+                        editingSecurity.setAlias(newSecurity.getAlias());
+                        editingSecurity.setValuesOverTime(newSecurity.getValuesOverTime());
+                        editingSecurity.setDates(newSecurity.getDates());
+                        editingSecurity.setQuantity(quantity);
+                        
+                        portfolio.save(ManageSecuritiesActivity.this);
+                        adapter.notifyDataSetChanged();
+                        Toast.makeText(ManageSecuritiesActivity.this, "Updated: " + editingSecurity.getName(), Toast.LENGTH_SHORT).show();
+                        clearInputs();
+                    } else {
+                        if (portfolio.getSecurities().size() >= 24) {
+                            Toast.makeText(ManageSecuritiesActivity.this, "Limit of 24 securities reached", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
 
-                if (portfolio.addSecurity(newSecurity)) {
-                    portfolio.save(ManageSecuritiesActivity.this);
-                    adapter.notifyItemInserted(portfolio.getSecurities().size() - 1);
-                    clearInputs();
-                    Toast.makeText(ManageSecuritiesActivity.this, "Added: " + newSecurity.getName(), Toast.LENGTH_SHORT).show();
-                }
+                        if (portfolio.addSecurity(newSecurity)) {
+                            portfolio.save(ManageSecuritiesActivity.this);
+                            adapter.notifyDataSetChanged();
+                            clearInputs();
+                            Toast.makeText(ManageSecuritiesActivity.this, "Added: " + newSecurity.getName(), Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
             }
 
             @Override
             public void onError(String errorMessage) {
-                pbSearching.setVisibility(View.GONE);
-                btnAdd.setEnabled(true);
-                showErrorDialog("Error Adding Security", errorMessage);
+                runOnUiThread(() -> {
+                    pbSearching.setVisibility(View.GONE);
+                    btnAdd.setEnabled(true);
+                    showErrorDialog("Error", errorMessage);
+                });
             }
         });
     }

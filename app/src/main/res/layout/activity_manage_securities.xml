@@ -13,7 +13,7 @@
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="WKN or ISIN"
+        android:hint="Ticker, ISIN or WKN"
         app:hintTextColor="@color/primaryDarkColor"
         app:boxStrokeColor="@color/primaryDarkColor"
         app:layout_constraintEnd_toStartOf="@+id/tilQuantity"
@@ -51,26 +51,6 @@
             android:textColor="@color/black" />
     </com.google.android.material.textfield.TextInputLayout>
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilCustomName"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="Optional Name"
-        app:hintTextColor="@color/primaryDarkColor"
-        app:boxStrokeColor="@color/primaryDarkColor"
-        app:layout_constraintEnd_toEndOf="@+id/tilQuantity"
-        app:layout_constraintStart_toStartOf="@+id/tilIdentifier"
-        app:layout_constraintTop_toBottomOf="@id/tilIdentifier">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etCustomName"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textColor="@color/black" />
-    </com.google.android.material.textfield.TextInputLayout>
-
     <View
         android:id="@+id/viewColorPreview"
         android:layout_width="12dp"
@@ -78,7 +58,7 @@
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:background="@android:color/darker_gray"
-        app:layout_constraintBottom_toBottomOf="@+id/tilCustomName"
+        app:layout_constraintBottom_toBottomOf="@+id/tilQuantity"
         app:layout_constraintEnd_toStartOf="@+id/btnAddSecurity"
         app:layout_constraintStart_toEndOf="@id/tilQuantity"
         app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
@@ -89,10 +69,30 @@
         android:layout_height="0dp"
         android:text="Add"
         app:backgroundTint="@color/primaryColor"
-        app:layout_constraintBottom_toBottomOf="@+id/tilCustomName"
+        app:layout_constraintBottom_toBottomOf="@+id/tilQuantity"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/viewColorPreview"
+        app:layout_constraintStart_toEndOf="@+id/viewColorPreview"
         app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilCustomName"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Custom Name (Optional / Search Fallback)"
+        app:hintTextColor="@color/primaryDarkColor"
+        app:boxStrokeColor="@color/primaryDarkColor"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tilIdentifier">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etCustomName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="@color/black" />
+    </com.google.android.material.textfield.TextInputLayout>
 
     <ProgressBar
         android:id="@+id/pbSearching"
@@ -103,7 +103,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tilCustomName" />
+        app:layout_constraintTop_toBottomOf="@+id/tilCustomName" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvManageSecurities"
@@ -113,7 +113,7 @@
         app:layout_constraintBottom_toTopOf="@+id/btnDone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/pbSearching" />
+        app:layout_constraintTop_toBottomOf="@+id/pbSearching" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnDone"

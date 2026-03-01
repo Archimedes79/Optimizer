@@ -37,35 +37,22 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <GridLayout
+    <LinearLayout
         android:id="@+id/buttonContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:columnCount="2"
-        android:rowCount="2"
+        android:orientation="horizontal"
         android:padding="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
         <com.google.android.material.button.MaterialButton
-            android:id="@+id/btnApiKey"
-            style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
-            android:layout_margin="4dp"
-            android:text="API Key"
-            android:textColor="@color/white"
-            app:backgroundTint="@color/primaryColor"
-            app:cornerRadius="8dp" />
-
-        <com.google.android.material.button.MaterialButton
             android:id="@+id/btnAddRemove"
             style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_weight="1"
             android:layout_margin="4dp"
             android:text="Assets"
             android:textColor="@color/white"
@@ -77,7 +64,7 @@
             style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_weight="1"
             android:layout_margin="4dp"
             android:text="Sync"
             android:textColor="@color/white"
@@ -89,13 +76,13 @@
             style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_columnWeight="1"
+            android:layout_weight="1"
             android:layout_margin="4dp"
             android:text="Optimize"
             android:textColor="@color/white"
             app:backgroundTint="@color/secondaryColor"
             app:cornerRadius="8dp" />
 
-    </GridLayout>
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,8 +1,6 @@
 package com.example.optimizer;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -20,10 +18,7 @@ public class MainActivity extends AppCompatActivity {
     private Portfolio portfolio;
     private PortfolioGraphView graphView;
     private ProgressBar pbSync;
-    private AlphaVantageService alphaVantageService;
-
-    private static final String PREFS_NAME = "OptimizerPrefs";
-    private static final String KEY_API_KEY = "api_key";
+    private YahooFinanceService yahooFinanceService;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,20 +32,16 @@ public class MainActivity extends AppCompatActivity {
         });
 
         portfolio = Portfolio.getInstance();
-        portfolio.load(this); // Load portfolio from JSON on startup (reloads old values)
-        alphaVantageService = new AlphaVantageService();
+        portfolio.load(this); // Reload old values at start
+
+        yahooFinanceService = new YahooFinanceService();
 
         graphView = findViewById(R.id.portfolioGraph);
-        pbSync = findViewById(R.id.pbSync); // Assuming there's a ProgressBar in your layout
+        pbSync = findViewById(R.id.pbSync);
         
         if (graphView != null) {
             graphView.setSecurities(portfolio.getSecurities());
         }
-
-        findViewById(R.id.btnApiKey).setOnClickListener(v -> {
-            Intent intent = new Intent(this, ApiKeyActivity.class);
-            startActivity(intent);
-        });
 
         findViewById(R.id.btnAddRemove).setOnClickListener(v -> {
             Intent intent = new Intent(this, ManageSecuritiesActivity.class);
@@ -68,23 +59,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void syncPortfolio() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String apiKey = prefs.getString(KEY_API_KEY, "");
-
-        if (apiKey.isEmpty()) {
-            Toast.makeText(this, "Please set an API Key first", Toast.LENGTH_SHORT).show();
-            return;
-        }
-
         if (portfolio.getSecurities().isEmpty()) {
-            Toast.makeText(this, "No securities to sync", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No assets to sync", Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (pbSync != null) pbSync.setVisibility(View.VISIBLE);
         findViewById(R.id.btnSync).setEnabled(false);
 
-        alphaVantageService.syncPortfolio(portfolio, apiKey, new AlphaVantageService.Callback<Void>() {
+        yahooFinanceService.syncPortfolio(portfolio, new YahooFinanceService.Callback<Void>() {
             @Override
             public void onSuccess(Void result) {
                 runOnUiThread(() -> {
@@ -94,7 +77,7 @@ public class MainActivity extends AppCompatActivity {
                     if (graphView != null) {
                         graphView.setSecurities(portfolio.getSecurities());
                     }
-                    Toast.makeText(MainActivity.this, "Portfolio synced successfully", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Sync complete", Toast.LENGTH_SHORT).show();
                 });
             }
 
@@ -103,7 +86,7 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (pbSync != null) pbSync.setVisibility(View.GONE);
                     findViewById(R.id.btnSync).setEnabled(true);
-                    showErrorDialog("Sync Error", errorMessage);
+                    showErrorDialog("Sync Failed", errorMessage);
                 });
             }
         });
@@ -120,7 +103,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh graph with saved data when returning to activity
         if (graphView != null && portfolio != null) {
             graphView.setSecurities(portfolio.getSecurities());
         }

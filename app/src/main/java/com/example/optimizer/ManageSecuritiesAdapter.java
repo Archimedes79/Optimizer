@@ -38,23 +38,32 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Security security = securities.get(position);
+        
         holder.tvName.setText(security.getName());
-        holder.tvIdentifier.setText(security.getIdentifier());
+        
+        String details = "ID: " + security.getIdentifier();
+        holder.tvIdentifier.setText(details);
+
+        if (security.getAlias() != null && !security.getAlias().isEmpty()) {
+            holder.tvAlias.setText("Search: " + security.getAlias());
+            holder.tvAlias.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvAlias.setVisibility(View.GONE);
+        }
+
         holder.tvQuantity.setText("Quantity: " + security.getQuantity());
         holder.viewColor.setBackgroundColor(security.getColor());
 
-        // Marking only the security with the absolute minimum time series data (least historical duration)
         int minCount = Integer.MAX_VALUE;
         for (Security s : securities) {
             minCount = Math.min(minCount, s.getNumberOfEntries());
         }
 
-        // Only mark if there are at least two assets and this one is at the minimum duration
         boolean isLimiting = (securities.size() > 1) && (security.getNumberOfEntries() == minCount);
         
         if (isLimiting) {
             holder.tvLimitingMarker.setVisibility(View.VISIBLE);
-            holder.itemView.setBackgroundColor(Color.parseColor("#11FF0000")); // Very subtle red tint
+            holder.itemView.setBackgroundColor(Color.parseColor("#11FF0000"));
         } else {
             holder.tvLimitingMarker.setVisibility(View.GONE);
             holder.itemView.setBackgroundColor(Color.TRANSPARENT);
@@ -80,6 +89,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView tvName;
+        public TextView tvAlias;
         public TextView tvIdentifier;
         public TextView tvQuantity;
         public TextView tvLimitingMarker;
@@ -89,6 +99,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         public ViewHolder(View view) {
             super(view);
             tvName = view.findViewById(R.id.tvManageName);
+            tvAlias = view.findViewById(R.id.tvManageAlias);
             tvIdentifier = view.findViewById(R.id.tvManageIdentifier);
             tvQuantity = view.findViewById(R.id.tvManageQuantity);
             tvLimitingMarker = view.findViewById(R.id.tvLimitingMarker);

@@ -21,14 +21,12 @@ public class OptimizeActivity extends AppCompatActivity {
     private TextView tvExpLabel;
     private TextView tvMddLabel;
     private TextView tvQuantities;
-    private Portfolio portfolio;
     private List<Security> securities;
 
     private double[] currentQuantities;
     private double[] minVarQuantities;
     private double[] maxExpQuantities;
     private double[] minDrawdownQuantities;
-    private double currentTotalValue;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,7 +38,7 @@ public class OptimizeActivity extends AppCompatActivity {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-        portfolio = Portfolio.getInstance();
+        Portfolio portfolio = Portfolio.getInstance();
         securities = portfolio.getSecurities();
 
         graphView = findViewById(R.id.optimizeGraph);
@@ -63,7 +61,7 @@ public class OptimizeActivity extends AppCompatActivity {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
                 if (fromUser) {
-                    adjustSliders(seekBar, progress);
+                    adjustSliders(seekBar);
                 }
                 updateUI();
             }
@@ -81,7 +79,11 @@ public class OptimizeActivity extends AppCompatActivity {
         updateUI();
     }
 
-    private void adjustSliders(SeekBar changedSeekBar, int progress) {
+    /**
+     * Passt die Regler an, wenn einer verändert wird. Wenn die Summe der Regler 100% übersteigt,
+     * werden die anderen Regler proportional reduziert, um immer eine Gesamtsumme von 100% zu halten.
+     */
+    private void adjustSliders(SeekBar changedSeekBar) {
         int total = sbReduceVariance.getProgress() + sbMaxExpectation.getProgress() + sbMinDrawdown.getProgress();
         if (total > 100) {
             int excess = total - 100;
@@ -95,6 +97,12 @@ public class OptimizeActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Reduziert zwei Regler proportional zu ihren aktuellen Werten, um den Überschuss auszugleichen.
+     * @param excess Die Menge, um die die Regler reduziert werden müssen
+     * @param s1 Der erste Regler
+     * @param s2 Der zweite Regler
+     */
     private void reduceOtherSliders(int excess, SeekBar s1, SeekBar s2) {
         int p1 = s1.getProgress();
         int p2 = s2.getProgress();
@@ -108,6 +116,15 @@ public class OptimizeActivity extends AppCompatActivity {
         s2.setProgress(Math.max(0, p2 - red2));
     }
 
+    /**
+     * Berechnet die optimalen Portfoliogewichtungen basierend auf drei Strategien:
+     * 1. Minimale Varianz - inverse Varianzgewichtung
+     * 2. Maximale Erwartung - volle Gewichtung auf das beste Asset
+     * 3. Minimales Drawdown - inverse Drawdown-Gewichtung
+     * Die Berechnung erfolgt über das sichtbare Zeitfenster des Graphen.
+     *
+     * @param visibleWindow Die Anzahl der Datenpunkte, die auf dem Bildschirm sichtbar sind
+     */
     private void calculateOptimization(int visibleWindow) {
         if (securities == null || securities.isEmpty()) return;
 
@@ -116,7 +133,7 @@ public class OptimizeActivity extends AppCompatActivity {
         minVarQuantities = new double[n];
         maxExpQuantities = new double[n];
         minDrawdownQuantities = new double[n];
-        currentTotalValue = 0;
+        double currentTotalValue = 0;
 
         double[] variances = new double[n];
         double[] expectations = new double[n];
@@ -206,6 +223,10 @@ public class OptimizeActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * Aktualisiert die Benutzeroberfläche mit den aktuellen Reglerpositionen und den berechneten
+     * Portfoliogewichtungen. Kombiniert die drei Optimierungsstrategien basierend auf den Schiebereglerprozentsätzen.
+     */
     private void updateUI() {
         if (graphView != null) {
             calculateOptimization((int) graphView.getCurrentVisibleCount());
@@ -243,6 +264,10 @@ public class OptimizeActivity extends AppCompatActivity {
         graphView.setSecuritiesWithQuantities(securities, displayQuantities);
     }
 
+    /**
+     * Verarbeitet den Klick auf den "Zurück"-Button in der Aktionsleiste.
+     * Schließt die aktuelle Activity und kehrt zur vorherigen Activity zurück.
+     */
     @Override
     public boolean onSupportNavigateUp() {
         finish();
