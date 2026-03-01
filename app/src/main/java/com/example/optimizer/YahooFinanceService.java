@@ -42,7 +42,7 @@ public class YahooFinanceService {
         void onError(String errorMessage);
     }
 
-    public void addSecurity(String identifier, String fallbackName, int quantity, Callback<Security> callback) {
+    public void addSecurity(String identifier, String fallbackName, double quantity, Callback<Security> callback) {
         executor.execute(() -> {
             // Step 1: Try searching by the primary identifier
             if (performSearchAndPopulate(identifier, null, null, quantity, callback)) {
@@ -63,7 +63,7 @@ public class YahooFinanceService {
     /**
      * Unifies the search, mapping, and population logic for adding and syncing.
      */
-    private boolean performSearchAndPopulate(String searchTerm, Security existingSecurity, String alias, int quantity, Callback<Security> callback) {
+    private boolean performSearchAndPopulate(String searchTerm, Security existingSecurity, String alias, double quantity, Callback<Security> callback) {
         try {
             String encodedSearch = URLEncoder.encode(searchTerm.trim(), "UTF-8");
             String searchResponse = makeRequest(SEARCH_URL + encodedSearch);
@@ -103,7 +103,7 @@ public class YahooFinanceService {
         return false;
     }
 
-    private boolean tryPopulate(String symbol, String name, String bestId, Security existingSecurity, String alias, int qty, String range, Callback<Security> callback) {
+    private boolean tryPopulate(String symbol, String name, String bestId, Security existingSecurity, String alias, double qty, String range, Callback<Security> callback) {
         try {
             String dataUrl = CHART_URL + URLEncoder.encode(symbol, "UTF-8") + "?range=" + range + "&interval=1mo";
             String dataResponse = makeRequest(dataUrl);

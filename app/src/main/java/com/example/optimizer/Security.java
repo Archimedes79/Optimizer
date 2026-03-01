@@ -19,7 +19,7 @@ public class Security {
     private String identifier; // WKN, ISIN or Ticker (Yahoo's best available)
     private List<Double> valuesOverTime;
     private List<String> dates; // Corresponding dates for valuesOverTime, format "yyyy-MM-dd"
-    private int quantity;
+    private double quantity;
     private int color;
 
     public Security() {
@@ -27,7 +27,7 @@ public class Security {
         this.dates = new ArrayList<>();
     }
 
-    public Security(String name, String identifier, int quantity) {
+    public Security(String name, String identifier, double quantity) {
         this.name = name;
         this.identifier = identifier;
         this.valuesOverTime = new ArrayList<>();
@@ -120,8 +120,8 @@ public class Security {
         getDates().add(date);
     }
     
-    public int getQuantity() { return quantity; }
-    public void setQuantity(int quantity) { this.quantity = quantity; }
+    public double getQuantity() { return quantity; }
+    public void setQuantity(double quantity) { this.quantity = quantity; }
 
     public int getColor() { return (color == 0) ? color = generateConsistentColor(identifier) : color; }
     public void setColor(int color) { this.color = color; }

@@ -11,6 +11,7 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
+import java.util.Locale;
 
 public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuritiesAdapter.ViewHolder> {
 
@@ -51,7 +52,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
             holder.tvAlias.setVisibility(View.GONE);
         }
 
-        holder.tvQuantity.setText("Quantity: " + security.getQuantity());
+        holder.tvQuantity.setText(String.format(Locale.getDefault(), "Quantity: %.4f", security.getQuantity()));
         holder.viewColor.setBackgroundColor(security.getColor());
 
         int minCount = Integer.MAX_VALUE;

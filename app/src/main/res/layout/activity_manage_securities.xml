@@ -41,13 +41,13 @@
         app:layout_constraintEnd_toStartOf="@+id/viewColorPreview"
         app:layout_constraintStart_toEndOf="@+id/tilIdentifier"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_weight="1">
+        app:layout_constraintHorizontal_weight="1.2">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etQuantity"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number"
+            android:inputType="numberDecimal"
             android:textColor="@color/black" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -83,7 +83,7 @@
         android:hint="Custom Name (Optional / Search Fallback)"
         app:hintTextColor="@color/primaryDarkColor"
         app:boxStrokeColor="@color/primaryDarkColor"
-        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/swUnit"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/tilIdentifier">
 
@@ -93,6 +93,17 @@
             android:layout_height="wrap_content"
             android:textColor="@color/black" />
     </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/swUnit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:text="EUR"
+        app:layout_constraintBottom_toBottomOf="@+id/tilCustomName"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/tilCustomName"
+        app:layout_constraintTop_toTopOf="@+id/tilCustomName" />
 
     <ProgressBar
         android:id="@+id/pbSearching"

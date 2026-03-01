@@ -16,12 +16,17 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.switchmaterial.SwitchMaterial;
+
+import java.util.List;
+
 public class ManageSecuritiesActivity extends AppCompatActivity {
 
     private EditText etIdentifier;
     private EditText etQuantity;
     private EditText etCustomName;
     private View viewColorPreview;
+    private SwitchMaterial swUnit;
     private Button btnAdd;
     private Button btnDone;
     private ProgressBar pbSearching;
@@ -47,6 +52,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         etQuantity = findViewById(R.id.etQuantity);
         etCustomName = findViewById(R.id.etCustomName);
         viewColorPreview = findViewById(R.id.viewColorPreview);
+        swUnit = findViewById(R.id.swUnit);
         btnAdd = findViewById(R.id.btnAddSecurity);
         btnDone = findViewById(R.id.btnDone);
         pbSearching = findViewById(R.id.pbSearching);
@@ -71,6 +77,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 etQuantity.setText(String.valueOf(security.getQuantity()));
                 etCustomName.setText(security.getAlias() != null ? security.getAlias() : "");
                 viewColorPreview.setBackgroundColor(security.getColor());
+                swUnit.setChecked(false); // Default to units when editing existing
                 btnAdd.setText("Update");
                 etIdentifier.setEnabled(true);
             }
@@ -100,25 +107,48 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
 
     private void searchAndAddOrUpdateSecurity() {
         String identifierInput = etIdentifier.getText().toString().trim().toUpperCase();
-        String qtyStr = etQuantity.getText().toString().trim();
+        String qtyInputStr = etQuantity.getText().toString().trim();
         String aliasInput = etCustomName.getText().toString().trim();
 
-        if (identifierInput.isEmpty() || qtyStr.isEmpty()) {
+        if (identifierInput.isEmpty() || qtyInputStr.isEmpty()) {
             Toast.makeText(this, "Please enter both ID and Quantity", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        int quantity = Integer.parseInt(qtyStr);
+        double inputValue;
+        try {
+            inputValue = Double.parseDouble(qtyInputStr);
+        } catch (NumberFormatException e) {
+            Toast.makeText(this, "Invalid number format", Toast.LENGTH_SHORT).show();
+            return;
+        }
 
         pbSearching.setVisibility(View.VISIBLE);
         btnAdd.setEnabled(false);
 
-        yahooFinanceService.addSecurity(identifierInput, aliasInput, quantity, new YahooFinanceService.Callback<Security>() {
+        boolean isEuro = swUnit.isChecked();
+
+        yahooFinanceService.addSecurity(identifierInput, aliasInput, 1.0, new YahooFinanceService.Callback<Security>() {
             @Override
             public void onSuccess(Security newSecurity) {
                 runOnUiThread(() -> {
                     pbSearching.setVisibility(View.GONE);
                     btnAdd.setEnabled(true);
+
+                    double finalQuantity;
+                    if (isEuro) {
+                        List<Double> values = newSecurity.getValuesOverTime();
+                        if (values.isEmpty() || values.get(values.size() - 1) == 0) {
+                            finalQuantity = 0;
+                            if (inputValue > 0) {
+                                Toast.makeText(ManageSecuritiesActivity.this, "Price lookup failed, quantity set to 0", Toast.LENGTH_LONG).show();
+                            }
+                        } else {
+                            finalQuantity = inputValue / values.get(values.size() - 1);
+                        }
+                    } else {
+                        finalQuantity = inputValue;
+                    }
 
                     if (editingSecurity != null) {
                         editingSecurity.setName(newSecurity.getName());
@@ -126,7 +156,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                         editingSecurity.setAlias(newSecurity.getAlias());
                         editingSecurity.setValuesOverTime(newSecurity.getValuesOverTime());
                         editingSecurity.setDates(newSecurity.getDates());
-                        editingSecurity.setQuantity(quantity);
+                        editingSecurity.setQuantity(finalQuantity);
                         
                         portfolio.save(ManageSecuritiesActivity.this);
                         adapter.notifyDataSetChanged();
@@ -138,11 +168,12 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                             return;
                         }
 
+                        newSecurity.setQuantity(finalQuantity);
                         if (portfolio.addSecurity(newSecurity)) {
                             portfolio.save(ManageSecuritiesActivity.this);
                             adapter.notifyDataSetChanged();
                             clearInputs();
-                            Toast.makeText(ManageSecuritiesActivity.this, "Added: " + newSecurity.getName(), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(ManageSecuritiesActivity.this, String.format(java.util.Locale.getDefault(), "Added: %s (%.2f units)", newSecurity.getName(), finalQuantity), Toast.LENGTH_SHORT).show();
                         }
                     }
                 });
@@ -172,6 +203,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         etIdentifier.setText("");
         etQuantity.setText("");
         etCustomName.setText("");
+        swUnit.setChecked(false);
         viewColorPreview.setBackgroundColor(android.graphics.Color.GRAY);
         etIdentifier.setEnabled(true);
         btnAdd.setText("Add");
