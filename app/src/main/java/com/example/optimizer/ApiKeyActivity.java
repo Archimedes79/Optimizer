@@ -77,7 +77,7 @@ public class ApiKeyActivity extends AppCompatActivity {
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             pbTesting.setVisibility(View.GONE);
             btnTestKey.setEnabled(true);
-            
+
             // For now, any non-empty key longer than 5 chars is "valid"
             if (key.length() > 5) {
                 Toast.makeText(this, "API Key is valid!", Toast.LENGTH_SHORT).show();

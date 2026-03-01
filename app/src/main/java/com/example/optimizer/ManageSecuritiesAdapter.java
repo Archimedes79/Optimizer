@@ -41,6 +41,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         holder.tvName.setText(security.getName());
         holder.tvIdentifier.setText(security.getIdentifier());
         holder.tvQuantity.setText("Quantity: " + security.getQuantity());
+        holder.viewColor.setBackgroundColor(security.getColor());
 
         // Marking only the security with the absolute minimum time series data (least historical duration)
         int minCount = Integer.MAX_VALUE;
@@ -83,6 +84,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         public TextView tvQuantity;
         public TextView tvLimitingMarker;
         public ImageButton btnRemove;
+        public View viewColor;
 
         public ViewHolder(View view) {
             super(view);
@@ -91,6 +93,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
             tvQuantity = view.findViewById(R.id.tvManageQuantity);
             tvLimitingMarker = view.findViewById(R.id.tvLimitingMarker);
             btnRemove = view.findViewById(R.id.btnRemoveSecurity);
+            viewColor = view.findViewById(R.id.viewSecurityColor);
         }
     }
 }

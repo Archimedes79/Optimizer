@@ -8,42 +8,46 @@ import com.github.mikephil.charting.data.Entry;
 import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.MPPointF;
 
-import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 /**
  * Custom MarkerView for the Portfolio Graph.
- * Handles the "interaction" of reading out time (date) and value when a point is selected.
+ * Uses the real date strings from the security data.
  */
 public class PortfolioMarkerView extends MarkerView {
 
     private final TextView tvDate;
     private final TextView tvValue;
-    private final SimpleDateFormat monthFormat = new SimpleDateFormat("MM/yy", Locale.getDefault());
-    private int maxEntries = 240;
+    private List<String> dates;
+    private int offsetFromStart = 0;
 
-    public PortfolioMarkerView(Context context, int layoutResource, int maxEntries) {
+    public PortfolioMarkerView(Context context, int layoutResource) {
         super(context, layoutResource);
         tvDate = findViewById(R.id.tvMarkerDate);
         tvValue = findViewById(R.id.tvMarkerValue);
-        this.maxEntries = maxEntries;
     }
 
-    public void setMaxEntries(int maxEntries) {
-        this.maxEntries = maxEntries;
+    public void setDateSource(List<String> dates, int offsetFromStart) {
+        this.dates = dates;
+        this.offsetFromStart = offsetFromStart;
     }
 
     @Override
     public void refreshContent(Entry e, Highlight highlight) {
-        Calendar cal = Calendar.getInstance();
-        // Today corresponds to the last index in the series (currentMaxEntries - 1)
-        int monthsBack = (maxEntries - 1) - (int) e.getX();
-        cal.add(Calendar.MONTH, -monthsBack);
-        Date date = cal.getTime();
+        int index = (int) e.getX();
         
-        tvDate.setText(monthFormat.format(date));
+        if (dates != null && !dates.isEmpty()) {
+            int dateIndex = offsetFromStart + index;
+            if (dateIndex >= 0 && dateIndex < dates.size()) {
+                tvDate.setText(dates.get(dateIndex));
+            } else {
+                tvDate.setText("Unknown");
+            }
+        } else {
+            tvDate.setText("No Date");
+        }
+        
         tvValue.setText(String.format(Locale.getDefault(), "Value: %.2f", e.getY()));
         
         super.refreshContent(e, highlight);
@@ -51,7 +55,6 @@ public class PortfolioMarkerView extends MarkerView {
 
     @Override
     public MPPointF getOffset() {
-        // Center the marker horizontally and place it above the point
         return new MPPointF(-(getWidth() / 2f), -getHeight());
     }
 }

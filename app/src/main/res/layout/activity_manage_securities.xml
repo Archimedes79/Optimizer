@@ -38,7 +38,7 @@
         android:hint="Qty"
         app:hintTextColor="@color/primaryDarkColor"
         app:boxStrokeColor="@color/primaryDarkColor"
-        app:layout_constraintEnd_toStartOf="@+id/btnAddSecurity"
+        app:layout_constraintEnd_toStartOf="@+id/viewColorPreview"
         app:layout_constraintStart_toEndOf="@+id/tilIdentifier"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintHorizontal_weight="1">
@@ -71,16 +71,27 @@
             android:textColor="@color/black" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <View
+        android:id="@+id/viewColorPreview"
+        android:layout_width="12dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="8dp"
+        android:layout_marginEnd="8dp"
+        android:background="@android:color/darker_gray"
+        app:layout_constraintBottom_toBottomOf="@+id/tilCustomName"
+        app:layout_constraintEnd_toStartOf="@+id/btnAddSecurity"
+        app:layout_constraintStart_toEndOf="@id/tilQuantity"
+        app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnAddSecurity"
         android:layout_width="wrap_content"
         android:layout_height="0dp"
-        android:layout_marginStart="8dp"
         android:text="Add"
         app:backgroundTint="@color/primaryColor"
         app:layout_constraintBottom_toBottomOf="@+id/tilCustomName"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/tilCustomName"
+        app:layout_constraintStart_toEndOf="@id/viewColorPreview"
         app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
 
     <ProgressBar

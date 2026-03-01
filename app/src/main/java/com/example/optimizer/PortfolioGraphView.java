@@ -29,11 +29,11 @@ import java.util.Locale;
 public class PortfolioGraphView extends FrameLayout {
 
     private LineChart chart;
-    private final int[] colors = {Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.CYAN, Color.MAGENTA, Color.LTGRAY, Color.DKGRAY};
     private int currentMaxEntries = 240;
     private float currentVisibleCount = 240;
     private PortfolioMarkerView markerView;
     private OnVisibleRangeChangeListener visibleRangeChangeListener;
+    private List<Security> currentSecurities;
 
     public interface OnVisibleRangeChangeListener {
         void onVisibleRangeChanged(float visibleCount);
@@ -81,7 +81,7 @@ public class PortfolioGraphView extends FrameLayout {
         leftAxis.setDrawGridLines(true);
         chart.getAxisRight().setEnabled(false);
 
-        markerView = new PortfolioMarkerView(context, R.layout.graph_marker, currentMaxEntries);
+        markerView = new PortfolioMarkerView(context, R.layout.graph_marker);
         chart.setMarker(markerView);
 
         chart.getLegend().setEnabled(true);
@@ -150,6 +150,7 @@ public class PortfolioGraphView extends FrameLayout {
     }
 
     public void setSecuritiesWithQuantities(List<Security> securities, double[] quantities) {
+        this.currentSecurities = securities;
         if (securities == null || securities.isEmpty() || quantities == null || quantities.length != securities.size()) {
             chart.clear();
             return;
@@ -177,7 +178,10 @@ public class PortfolioGraphView extends FrameLayout {
         if (currentVisibleCount > minEntries) currentVisibleCount = minEntries;
         if (currentVisibleCount < 5) currentVisibleCount = 5;
 
-        if (markerView != null) markerView.setMaxEntries(minEntries);
+        if (markerView != null) {
+            Security first = securities.get(0);
+            markerView.setDateSource(first.getDates(), first.getValuesOverTime().size() - minEntries);
+        }
 
         float lastTotalValue = 0;
         for (int i = 0; i < securities.size(); i++) {
@@ -200,7 +204,7 @@ public class PortfolioGraphView extends FrameLayout {
             }
             
             LineDataSet set = new LineDataSet(entries, s.getName());
-            int baseColor = colors[i % colors.length];
+            int baseColor = s.getColor();
             int alphaColor = Color.argb(120, Color.red(baseColor), Color.green(baseColor), Color.blue(baseColor));
             set.setColor(alphaColor);
             set.setDrawCircles(false);
@@ -240,8 +244,24 @@ public class PortfolioGraphView extends FrameLayout {
 
         @Override
         public String getFormattedValue(float value) {
+            int index = (int) value;
+            
+            // Try to use real dates from the first security if available
+            if (currentSecurities != null && !currentSecurities.isEmpty()) {
+                Security first = currentSecurities.get(0);
+                List<String> dates = first.getDates();
+                if (dates != null && !dates.isEmpty()) {
+                    int offset = first.getValuesOverTime().size() - currentMaxEntries;
+                    int dateIndex = offset + index;
+                    if (dateIndex >= 0 && dateIndex < dates.size()) {
+                        return dates.get(dateIndex);
+                    }
+                }
+            }
+            
+            // Fallback to month calculation
             Calendar cal = Calendar.getInstance();
-            int monthsBack = (currentMaxEntries - 1) - (int) value;
+            int monthsBack = (currentMaxEntries - 1) - index;
             cal.add(Calendar.MONTH, -monthsBack);
             return monthFormat.format(cal.getTime());
         }

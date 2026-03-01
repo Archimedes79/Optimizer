@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
@@ -25,6 +27,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
     private EditText etIdentifier;
     private EditText etQuantity;
     private EditText etCustomName;
+    private View viewColorPreview;
     private Button btnAdd;
     private Button btnDone;
     private ProgressBar pbSearching;
@@ -62,6 +65,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         etIdentifier = findViewById(R.id.etIdentifier);
         etQuantity = findViewById(R.id.etQuantity);
         etCustomName = findViewById(R.id.etCustomName);
+        viewColorPreview = findViewById(R.id.viewColorPreview);
         btnAdd = findViewById(R.id.btnAddSecurity);
         btnDone = findViewById(R.id.btnDone);
         pbSearching = findViewById(R.id.pbSearching);
@@ -85,9 +89,25 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 etIdentifier.setText(security.getIdentifier());
                 etQuantity.setText(String.valueOf(security.getQuantity()));
                 etCustomName.setText(security.getCustomName() != null ? security.getCustomName() : "");
+                viewColorPreview.setBackgroundColor(security.getColor());
                 btnAdd.setText("Update");
-                etIdentifier.setEnabled(false); // Identifier usually shouldn't change for an existing entry
+                etIdentifier.setEnabled(false);
             }
+        });
+
+        etIdentifier.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+                if (editingSecurity == null) {
+                    viewColorPreview.setBackgroundColor(Security.generateConsistentColor(s.toString().trim().toUpperCase()));
+                }
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {}
         });
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -142,12 +162,12 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             btnAdd.setEnabled(true);
 
             String dbName = MOCK_DB.getOrDefault(identifier, "Unknown Security (" + identifier + ")");
-            
+
             Security newSecurity = new Security(dbName, identifier, quantity);
             if (!customName.isEmpty()) {
                 newSecurity.setCustomName(customName);
             }
-            
+
             newSecurity.refreshData();
 
             if (portfolio.addSecurity(newSecurity)) {
@@ -164,6 +184,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         etIdentifier.setText("");
         etQuantity.setText("");
         etCustomName.setText("");
+        viewColorPreview.setBackgroundColor(android.graphics.Color.GRAY);
         etIdentifier.setEnabled(true);
         btnAdd.setText("Add");
     }
