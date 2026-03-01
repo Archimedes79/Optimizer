@@ -61,6 +61,8 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
 
         holder.tvQuantity.setText(String.format(Locale.getDefault(), "Quantity: %.4f", security.getQuantity()));
         holder.viewColor.setBackgroundColor(security.getColor());
+        
+        holder.tvFixed.setVisibility(security.isFixed() ? View.VISIBLE : View.GONE);
 
         int minCount = Integer.MAX_VALUE;
         for (Security s : securities) {
@@ -115,6 +117,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         public TextView tvIdentifier;
         public TextView tvQuantity;
         public TextView tvLimitingMarker;
+        public TextView tvFixed;
         public ImageButton btnRemove;
         public View viewColor;
 
@@ -125,6 +128,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
             tvIdentifier = view.findViewById(R.id.tvManageIdentifier);
             tvQuantity = view.findViewById(R.id.tvManageQuantity);
             tvLimitingMarker = view.findViewById(R.id.tvLimitingMarker);
+            tvFixed = view.findViewById(R.id.tvManageFixed);
             btnRemove = view.findViewById(R.id.btnRemoveSecurity);
             viewColor = view.findViewById(R.id.viewSecurityColor);
         }

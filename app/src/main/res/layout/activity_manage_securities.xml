@@ -8,46 +8,25 @@
     android:background="@color/backgroundColor"
     tools:context=".ManageSecuritiesActivity">
 
+    <!-- Row 1: Ticker | Color | Add -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilIdentifier"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:hint="Ticker, ISIN or WKN"
+        android:hint="Ticker or ISIN"
         app:hintTextColor="@color/primaryDarkColor"
         app:boxStrokeColor="@color/primaryDarkColor"
-        app:layout_constraintEnd_toStartOf="@+id/tilQuantity"
+        app:layout_constraintEnd_toStartOf="@+id/viewColorPreview"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_weight="2">
+        app:layout_constraintHorizontal_weight="1">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etIdentifier"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAllCaps="true"
-            android:textColor="@color/black" />
-    </com.google.android.material.textfield.TextInputLayout>
-
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/tilQuantity"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:hint="Qty"
-        app:hintTextColor="@color/primaryDarkColor"
-        app:boxStrokeColor="@color/primaryDarkColor"
-        app:layout_constraintEnd_toStartOf="@+id/viewColorPreview"
-        app:layout_constraintStart_toEndOf="@+id/tilIdentifier"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_weight="1.2">
-
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/etQuantity"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="numberDecimal"
             android:textColor="@color/black" />
     </com.google.android.material.textfield.TextInputLayout>
 
@@ -58,9 +37,9 @@
         android:layout_marginStart="8dp"
         android:layout_marginEnd="8dp"
         android:background="@android:color/darker_gray"
-        app:layout_constraintBottom_toBottomOf="@+id/tilQuantity"
+        app:layout_constraintBottom_toBottomOf="@+id/tilIdentifier"
         app:layout_constraintEnd_toStartOf="@+id/btnAddSecurity"
-        app:layout_constraintStart_toEndOf="@id/tilQuantity"
+        app:layout_constraintStart_toEndOf="@id/tilIdentifier"
         app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
 
     <com.google.android.material.button.MaterialButton
@@ -69,10 +48,48 @@
         android:layout_height="0dp"
         android:text="Add"
         app:backgroundTint="@color/primaryColor"
-        app:layout_constraintBottom_toBottomOf="@+id/tilQuantity"
+        app:layout_constraintBottom_toBottomOf="@+id/tilIdentifier"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/viewColorPreview"
         app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
+
+    <!-- Row 2: Quantity | € | Alias -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/tilQuantity"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="Qty"
+        app:boxStrokeColor="@color/primaryDarkColor"
+        app:hintTextColor="@color/primaryDarkColor"
+        app:layout_constraintEnd_toStartOf="@+id/tvEuroSymbol"
+        app:layout_constraintHorizontal_weight="0.6"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/tilIdentifier">
+
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/etQuantity"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="numberDecimal"
+            android:textColor="@color/black" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <TextView
+        android:id="@+id/tvEuroSymbol"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="€"
+        android:textSize="18sp"
+        android:textColor="@color/black"
+        android:layout_marginStart="4dp"
+        android:layout_marginEnd="4dp"
+        android:visibility="invisible"
+        app:layout_constraintTop_toTopOf="@id/tilQuantity"
+        app:layout_constraintBottom_toBottomOf="@id/tilQuantity"
+        app:layout_constraintStart_toEndOf="@id/tilQuantity"
+        app:layout_constraintEnd_toStartOf="@id/tilCustomName" />
 
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/tilCustomName"
@@ -80,12 +97,13 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:hint="Custom Name (Optional / Search Fallback)"
+        android:hint="Alias (Optional)"
         app:hintTextColor="@color/primaryDarkColor"
         app:boxStrokeColor="@color/primaryDarkColor"
-        app:layout_constraintEnd_toStartOf="@+id/swUnit"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tilIdentifier">
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/tvEuroSymbol"
+        app:layout_constraintTop_toBottomOf="@+id/tilIdentifier"
+        app:layout_constraintHorizontal_weight="1.4">
 
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etCustomName"
@@ -94,16 +112,30 @@
             android:textColor="@color/black" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <!-- Row 3: Switches aligned under windows -->
     <com.google.android.material.switchmaterial.SwitchMaterial
         android:id="@+id/swUnit"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
+        android:layout_marginTop="4dp"
         android:text="EUR"
-        app:layout_constraintBottom_toBottomOf="@+id/tilCustomName"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/tilCustomName"
-        app:layout_constraintTop_toTopOf="@+id/tilCustomName" />
+        android:textColor="@color/black"
+        android:switchPadding="20dp"
+        app:layout_constraintTop_toBottomOf="@+id/tilCustomName"
+        app:layout_constraintStart_toStartOf="@+id/tilQuantity"
+        app:layout_constraintEnd_toEndOf="@+id/tilQuantity" />
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/swFixed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="FIX"
+        android:textColor="@color/black"
+        android:switchPadding="20dp"
+        app:layout_constraintTop_toTopOf="@+id/swUnit"
+        app:layout_constraintStart_toStartOf="@+id/tilCustomName"
+        app:layout_constraintEnd_toEndOf="@+id/tilCustomName" />
 
     <ProgressBar
         android:id="@+id/pbSearching"
@@ -114,13 +146,13 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/tilCustomName" />
+        app:layout_constraintTop_toBottomOf="@+id/swUnit" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvManageSecurities"
         android:layout_width="0dp"
         android:layout_height="0dp"
-        android:layout_marginTop="16dp"
+        android:layout_marginTop="8dp"
         android:scrollbars="vertical"
         android:fadeScrollbars="false"
         app:layout_constraintBottom_toTopOf="@+id/btnDone"

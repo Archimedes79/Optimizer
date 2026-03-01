@@ -121,13 +121,15 @@ public class OptimizeActivity extends AppCompatActivity {
             totalValue += displayQuantities[i] * latestPrices[i];
         }
 
-        StringBuilder sb = new StringBuilder("Optimized Allocation:\n");
+        StringBuilder sb = new StringBuilder("Portfolio Allocation:\n");
         for (int i = 0; i < securities.size(); i++) {
+            Security s = securities.get(i);
             double assetValue = displayQuantities[i] * latestPrices[i];
             double percentage = (totalValue > 0) ? (assetValue / totalValue) * 100.0 : 0;
             
-            sb.append(String.format(Locale.getDefault(), "%s: %.2f units (%.1f%%)\n", 
-                    securities.get(i).getDisplayName(), displayQuantities[i], percentage));
+            String fixedTag = s.isFixed() ? " (FIXED)" : "";
+            sb.append(String.format(Locale.getDefault(), "%s%s: %.2f units (%.1f%%)\n", 
+                    s.getDisplayName(), fixedTag, displayQuantities[i], percentage));
         }
 
         tvQuantities.setText(sb.toString());

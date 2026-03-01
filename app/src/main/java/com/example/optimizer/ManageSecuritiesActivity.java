@@ -8,11 +8,12 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -28,7 +29,9 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
     private EditText etQuantity;
     private EditText etCustomName;
     private View viewColorPreview;
+    private TextView tvEuroSymbol;
     private SwitchMaterial swUnit;
+    private SwitchMaterial swFixed;
     private Button btnAdd;
     private Button btnDone;
     private ProgressBar pbSearching;
@@ -57,7 +60,9 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         etQuantity = findViewById(R.id.etQuantity);
         etCustomName = findViewById(R.id.etCustomName);
         viewColorPreview = findViewById(R.id.viewColorPreview);
+        tvEuroSymbol = findViewById(R.id.tvEuroSymbol);
         swUnit = findViewById(R.id.swUnit);
+        swFixed = findViewById(R.id.swFixed);
         btnAdd = findViewById(R.id.btnAddSecurity);
         btnDone = findViewById(R.id.btnDone);
         pbSearching = findViewById(R.id.pbSearching);
@@ -81,12 +86,14 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 etIdentifier.setText(security.getSymbol());
                 
                 initialQuantity = security.getQuantity();
-                lastSetQuantityText = String.valueOf(initialQuantity);
+                lastSetQuantityText = String.format(Locale.US, "%.4f", initialQuantity);
                 etQuantity.setText(lastSetQuantityText);
                 
                 etCustomName.setText(security.getAlias() != null ? security.getAlias() : "");
                 viewColorPreview.setBackgroundColor(security.getColor());
-                swUnit.setChecked(false); 
+                swUnit.setChecked(false);
+                tvEuroSymbol.setVisibility(View.INVISIBLE);
+                swFixed.setChecked(security.isFixed());
                 btnAdd.setText("Update");
                 etIdentifier.setEnabled(true);
             }
@@ -98,6 +105,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         });
 
         swUnit.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            tvEuroSymbol.setVisibility(isChecked ? View.VISIBLE : View.INVISIBLE);
             if (editingSecurity == null) return;
             
             String currentText = etQuantity.getText().toString().trim();
@@ -115,10 +123,9 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                     lastSetQuantityText = String.format(Locale.US, "%.2f", val * lastPrice);
                 } else {
                     // Euro to Shares
-                    // If we are switching back and the value is close to the initial quantity, use it to avoid rounding
                     double backToShares = val / lastPrice;
                     if (Math.abs(backToShares - initialQuantity) < 0.0001) {
-                        lastSetQuantityText = String.valueOf(initialQuantity);
+                        lastSetQuantityText = String.format(Locale.US, "%.4f", initialQuantity);
                     } else {
                         lastSetQuantityText = String.format(Locale.US, "%.4f", backToShares);
                     }
@@ -153,6 +160,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         String identifierInput = etIdentifier.getText().toString().trim().toUpperCase();
         String qtyInputStr = etQuantity.getText().toString().trim();
         String aliasInput = etCustomName.getText().toString().trim();
+        boolean isFixed = swFixed.isChecked();
 
         if (identifierInput.isEmpty() || qtyInputStr.isEmpty()) {
             Toast.makeText(this, "Please enter both ID and Quantity", Toast.LENGTH_SHORT).show();
@@ -193,9 +201,9 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                     }
 
                     if (filteredResults.size() == 1) {
-                        finalizeAddition(filteredResults.get(0), inputValue, isEuro, quantityFieldUnchanged);
+                        finalizeAddition(filteredResults.get(0), inputValue, isEuro, quantityFieldUnchanged, isFixed);
                     } else {
-                        showSelectionDialog(filteredResults, inputValue, isEuro, quantityFieldUnchanged);
+                        showSelectionDialog(filteredResults, inputValue, isEuro, quantityFieldUnchanged, isFixed);
                     }
                 });
             }
@@ -211,7 +219,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         });
     }
 
-    private void showSelectionDialog(List<Security> results, double inputValue, boolean isEuro, boolean quantityFieldUnchanged) {
+    private void showSelectionDialog(List<Security> results, double inputValue, boolean isEuro, boolean quantityFieldUnchanged, boolean isFixed) {
         String[] options = new String[results.size()];
         for (int i = 0; i < results.size(); i++) {
             Security s = results.get(i);
@@ -222,13 +230,13 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Select the correct Ticker")
                 .setItems(options, (dialog, which) -> {
-                    finalizeAddition(results.get(which), inputValue, isEuro, quantityFieldUnchanged);
+                    finalizeAddition(results.get(which), inputValue, isEuro, quantityFieldUnchanged, isFixed);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private void finalizeAddition(Security selectedSecurity, double inputValue, boolean isEuro, boolean quantityFieldUnchanged) {
+    private void finalizeAddition(Security selectedSecurity, double inputValue, boolean isEuro, boolean quantityFieldUnchanged, boolean isFixed) {
         double finalQuantity;
         
         if (editingSecurity != null && quantityFieldUnchanged) {
@@ -252,6 +260,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             editingSecurity.setValuesOverTime(selectedSecurity.getValuesOverTime());
             editingSecurity.setDates(selectedSecurity.getDates());
             editingSecurity.setQuantity(finalQuantity);
+            editingSecurity.setFixed(isFixed);
             
             portfolio.save(this);
             adapter.notifyDataSetChanged();
@@ -264,6 +273,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             }
 
             selectedSecurity.setQuantity(finalQuantity);
+            selectedSecurity.setFixed(isFixed);
             if (portfolio.addSecurity(selectedSecurity)) {
                 portfolio.save(this);
                 adapter.notifyDataSetChanged();
@@ -287,6 +297,8 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         etQuantity.setText("");
         etCustomName.setText("");
         swUnit.setChecked(false);
+        swFixed.setChecked(false);
+        tvEuroSymbol.setVisibility(View.INVISIBLE);
         viewColorPreview.setBackgroundColor(android.graphics.Color.GRAY);
         etIdentifier.setEnabled(true);
         btnAdd.setText("Add");

@@ -20,7 +20,7 @@ import java.util.List;
 
 /**
  * Handles the calculation of optimized portfolio allocations based on different strategies.
- * Now uses Apache Commons Math for Global Minimum Variance and Minimum Portfolio Drawdown optimization.
+ * Non-fixed securities are optimized while fixed securities remain at their current quantity.
  */
 public class PortfolioOptimizer {
 
@@ -30,6 +30,7 @@ public class PortfolioOptimizer {
     private double[] maxExpQuantities;
     private double[] minDrawdownQuantities;
     private double[] latestPrices;
+    private boolean[] isFixed;
 
     public PortfolioOptimizer(List<Security> securities) {
         this.securities = securities;
@@ -39,80 +40,109 @@ public class PortfolioOptimizer {
         this.maxExpQuantities = new double[n];
         this.minDrawdownQuantities = new double[n];
         this.latestPrices = new double[n];
+        this.isFixed = new boolean[n];
     }
 
     /**
-     * Calculates the 100% allocation for each optimization strategy based on the visible window.
+     * Re-calculates the target quantities for each optimization strategy.
      */
     public void calculateOptimizations(int visibleWindow) {
         if (securities == null || securities.isEmpty()) return;
 
         int n = securities.size();
-        double currentTotalValue = 0;
+        List<Integer> variableIndices = new ArrayList<>();
+        double variableTotalValue = 0;
 
-        double[] expectations = new double[n];
-        List<double[]> allReturns = new ArrayList<>();
-        List<List<Double>> windowValues = new ArrayList<>();
-        
+        // 1. Identify variable vs fixed assets and calculate baseline variable value
         for (int i = 0; i < n; i++) {
             Security s = securities.get(i);
             currentQuantities[i] = s.getQuantity();
+            isFixed[i] = s.isFixed();
+            
             List<Double> allValues = s.getValuesOverTime();
             if (allValues.isEmpty()) {
-                allReturns.add(new double[0]);
-                windowValues.add(new ArrayList<>());
-                continue;
+                latestPrices[i] = 0;
+            } else {
+                latestPrices[i] = allValues.get(allValues.size() - 1);
             }
-            
+
+            if (!isFixed[i]) {
+                variableIndices.add(i);
+                variableTotalValue += currentQuantities[i] * latestPrices[i];
+            }
+        }
+
+        // 2. Optimization on variable subset
+        int numVar = variableIndices.size();
+        if (numVar == 0) {
+            // Fallback if no variable assets
+            for (int i = 0; i < n; i++) {
+                minVarQuantities[i] = maxExpQuantities[i] = minDrawdownQuantities[i] = currentQuantities[i];
+            }
+            return;
+        }
+
+        // Prepare return data and price data for optimization
+        List<double[]> variableReturns = new ArrayList<>();
+        List<List<Double>> variableWindowValues = new ArrayList<>();
+        double[] variableExpectations = new double[numVar];
+
+        for (int j = 0; j < numVar; j++) {
+            int originalIdx = variableIndices.get(j);
+            Security s = securities.get(originalIdx);
+            List<Double> allValues = s.getValuesOverTime();
             int startIdx = Math.max(0, allValues.size() - visibleWindow);
             List<Double> values = allValues.subList(startIdx, allValues.size());
-            windowValues.add(values);
-            
-            latestPrices[i] = values.get(values.size() - 1);
-            currentTotalValue += currentQuantities[i] * latestPrices[i];
+            variableWindowValues.add(values);
 
             if (values.size() > 1) {
-                double firstPrice = values.get(0);
-                double lastPrice = values.get(values.size() - 1);
-                expectations[i] = (lastPrice / firstPrice) - 1.0;
-
+                variableExpectations[j] = (values.get(values.size() - 1) / values.get(0)) - 1.0;
                 double[] periodicReturns = new double[values.size() - 1];
-                for (int j = 1; j < values.size(); j++) {
-                    periodicReturns[j - 1] = (values.get(j) - values.get(j - 1)) / values.get(j - 1);
+                for (int k = 1; k < values.size(); k++) {
+                    periodicReturns[k - 1] = (values.get(k) - values.get(k - 1)) / values.get(k - 1);
                 }
-                allReturns.add(periodicReturns);
+                variableReturns.add(periodicReturns);
             } else {
-                allReturns.add(new double[0]);
-                expectations[i] = -1.0;
+                variableExpectations[j] = -1.0;
+                variableReturns.add(new double[0]);
             }
         }
 
-        // 1. Global Minimum Variance (GMV) Weights
-        double[] gmvWeights = calculateGMVWeights(allReturns);
+        // Calculate Weights for strategies
+        double[] gmvWeights = calculateGMVWeights(variableReturns);
+        double[] maxExpWeights = calculateMaxExpWeights(variableExpectations);
+        double[] minDDWeights = calculateMinPortfolioDrawdownWeights(variableWindowValues);
 
-        // 2. Max Exp Index
-        int bestExpIdx = 0;
-        for (int i = 1; i < n; i++) {
-            if (expectations[i] > expectations[bestExpIdx]) bestExpIdx = i;
-        }
-
-        // 3. Minimum Portfolio Drawdown Weights
-        double[] minDDWeights = calculateMinPortfolioDrawdownWeights(windowValues);
-
-        // Calculate total value for scaling
-        // If currentTotalValue is 0 (all assets have 0 quantity), we use a nominal value of 1000.0 for scaling
-        double scalingValue = (currentTotalValue > 0) ? currentTotalValue : 1000.0;
+        // 3. Map weights back to full target quantity arrays
+        // We scale the variable portion to preserve its current total value (or use 1000 if empty)
+        double scalingValue = (variableTotalValue > 0) ? variableTotalValue : 1000.0;
 
         for (int i = 0; i < n; i++) {
-            if (latestPrices[i] > 0) {
-                minVarQuantities[i] = (scalingValue * gmvWeights[i]) / latestPrices[i];
-
-                double eWeight = (i == bestExpIdx) ? 1.0 : 0.0;
-                maxExpQuantities[i] = (scalingValue * eWeight) / latestPrices[i];
-
-                minDrawdownQuantities[i] = (scalingValue * minDDWeights[i]) / latestPrices[i];
+            if (isFixed[i]) {
+                // Fixed assets always keep their original quantity
+                minVarQuantities[i] = maxExpQuantities[i] = minDrawdownQuantities[i] = currentQuantities[i];
+            } else {
+                int varIdx = variableIndices.indexOf(i);
+                if (latestPrices[i] > 0) {
+                    minVarQuantities[i] = (scalingValue * gmvWeights[varIdx]) / latestPrices[i];
+                    maxExpQuantities[i] = (scalingValue * maxExpWeights[varIdx]) / latestPrices[i];
+                    minDrawdownQuantities[i] = (scalingValue * minDDWeights[varIdx]) / latestPrices[i];
+                } else {
+                    minVarQuantities[i] = maxExpQuantities[i] = minDrawdownQuantities[i] = 0;
+                }
             }
         }
+    }
+
+    private double[] calculateMaxExpWeights(double[] expectations) {
+        int n = expectations.length;
+        double[] weights = new double[n];
+        int bestIdx = 0;
+        for (int i = 1; i < n; i++) {
+            if (expectations[i] > expectations[bestIdx]) bestIdx = i;
+        }
+        if (n > 0) weights[bestIdx] = 1.0;
+        return weights;
     }
 
     private double[] calculateGMVWeights(List<double[]> allReturns) {
@@ -242,7 +272,7 @@ public class PortfolioOptimizer {
                 return bestWeights;
             }
         } catch (Exception e) {
-            // Optimization failed, use fallback
+            // Optimization failed
         }
         
         double[] fallback = new double[n];
@@ -275,15 +305,15 @@ public class PortfolioOptimizer {
         return weights;
     }
 
-    /**
-     * Calculates the blended quantities based on the current slider positions (0.0 to 1.0).
-     */
     public double[] getBlendedQuantities(double varFactor, double expFactor, double mddFactor) {
         int n = securities.size();
         double currentFactor = 1.0 - varFactor - expFactor - mddFactor;
         double[] blended = new double[n];
 
         for (int i = 0; i < n; i++) {
+            // Note: Since all target arrays (current, minVar, maxExp, minDD) 
+            // contain the fixed quantity for fixed assets, the linear 
+            // combination naturally results in the fixed quantity as well.
             blended[i] = (currentQuantities[i] * currentFactor) +
                          (minVarQuantities[i] * varFactor) +
                          (maxExpQuantities[i] * expFactor) +

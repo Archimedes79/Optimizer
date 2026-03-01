@@ -21,6 +21,7 @@ public class Security {
     private List<String> dates; // Corresponding dates for valuesOverTime, format "yyyy-MM-dd"
     private double quantity;
     private int color;
+    private boolean isFixed;    // Whether this security has a fixed value in optimization
 
     public Security() {
         this.valuesOverTime = new ArrayList<>();
@@ -34,6 +35,7 @@ public class Security {
         this.dates = new ArrayList<>();
         this.quantity = quantity;
         this.color = generateConsistentColor(symbol);
+        this.isFixed = false;
     }
 
     public static int generateConsistentColor(String seed) {
@@ -135,4 +137,7 @@ public class Security {
     public int getNumberOfEntries() {
         return getValuesOverTime().size();
     }
+
+    public boolean isFixed() { return isFixed; }
+    public void setFixed(boolean fixed) { isFixed = fixed; }
 }
