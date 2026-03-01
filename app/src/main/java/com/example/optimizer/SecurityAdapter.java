@@ -30,6 +30,14 @@ public class SecurityAdapter extends RecyclerView.Adapter<SecurityAdapter.ViewHo
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Security security = securities.get(position);
         holder.tvSecurityName.setText(security.getName());
+        
+        if (security.getAlias() != null && !security.getAlias().isEmpty()) {
+            holder.tvAlias.setText(security.getAlias());
+            holder.tvAlias.setVisibility(View.VISIBLE);
+        } else {
+            holder.tvAlias.setVisibility(View.GONE);
+        }
+        
         holder.tvIdentifier.setText(security.getIdentifier());
         holder.tvEntries.setText("Entries: " + security.getNumberOfEntries());
         holder.tvValues.setText("Values: " + security.getValuesOverTime().toString());
@@ -42,6 +50,7 @@ public class SecurityAdapter extends RecyclerView.Adapter<SecurityAdapter.ViewHo
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
         public TextView tvSecurityName;
+        public TextView tvAlias;
         public TextView tvIdentifier;
         public TextView tvEntries;
         public TextView tvValues;
@@ -49,6 +58,7 @@ public class SecurityAdapter extends RecyclerView.Adapter<SecurityAdapter.ViewHo
         public ViewHolder(View view) {
             super(view);
             tvSecurityName = view.findViewById(R.id.tvSecurityName);
+            tvAlias = view.findViewById(R.id.tvAlias);
             tvIdentifier = view.findViewById(R.id.tvIdentifier);
             tvEntries = view.findViewById(R.id.tvEntries);
             tvValues = view.findViewById(R.id.tvValues);

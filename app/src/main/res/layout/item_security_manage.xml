@@ -58,7 +58,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="14sp"
-                android:textColor="@android:color/darker_gray"
+                android:textColor="@android:color/black"
                 android:text="Custom Name"
                 android:visibility="gone" />
 
@@ -67,8 +67,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textSize="12sp"
-                android:textColor="@android:color/darker_gray"
-                android:text="Search: "
+                android:textColor="@android:color/black"
+                android:text="Alias: "
                 android:visibility="gone" />
 
             <TextView
