@@ -127,7 +127,7 @@ public class OptimizeActivity extends AppCompatActivity {
             double percentage = (totalValue > 0) ? (assetValue / totalValue) * 100.0 : 0;
             
             sb.append(String.format(Locale.getDefault(), "%s: %.2f units (%.1f%%)\n", 
-                    securities.get(i).getName(), displayQuantities[i], percentage));
+                    securities.get(i).getDisplayName(), displayQuantities[i], percentage));
         }
 
         tvQuantities.setText(sb.toString());

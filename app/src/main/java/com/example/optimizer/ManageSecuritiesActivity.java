@@ -18,7 +18,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.switchmaterial.SwitchMaterial;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class ManageSecuritiesActivity extends AppCompatActivity {
 
@@ -34,6 +36,9 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
     private Portfolio portfolio;
     private Security editingSecurity = null;
     private YahooFinanceService yahooFinanceService;
+    
+    private String lastSetQuantityText = "";
+    private double initialQuantity = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,20 +72,59 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 if (editingSecurity == security) {
                     clearInputs();
                 }
-                Toast.makeText(ManageSecuritiesActivity.this, "Removed " + security.getName(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(ManageSecuritiesActivity.this, "Removed " + security.getDisplayName(), Toast.LENGTH_SHORT).show();
             }
 
             @Override
             public void onSecurityClicked(Security security) {
                 editingSecurity = security;
-                etIdentifier.setText(security.getIdentifier());
-                etQuantity.setText(String.valueOf(security.getQuantity()));
+                etIdentifier.setText(security.getSymbol());
+                
+                initialQuantity = security.getQuantity();
+                lastSetQuantityText = String.valueOf(initialQuantity);
+                etQuantity.setText(lastSetQuantityText);
+                
                 etCustomName.setText(security.getAlias() != null ? security.getAlias() : "");
                 viewColorPreview.setBackgroundColor(security.getColor());
-                swUnit.setChecked(false); // Default to units when editing existing
+                swUnit.setChecked(false); 
                 btnAdd.setText("Update");
                 etIdentifier.setEnabled(true);
             }
+
+            @Override
+            public void onSecurityColorChanged(Security security) {
+                portfolio.save(ManageSecuritiesActivity.this);
+            }
+        });
+
+        swUnit.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (editingSecurity == null) return;
+            
+            String currentText = etQuantity.getText().toString().trim();
+            if (currentText.isEmpty()) return;
+            
+            try {
+                double val = Double.parseDouble(currentText);
+                List<Double> values = editingSecurity.getValuesOverTime();
+                if (values.isEmpty()) return;
+                double lastPrice = values.get(values.size() - 1);
+                if (lastPrice <= 0) return;
+                
+                if (isChecked) {
+                    // Shares to Euro
+                    lastSetQuantityText = String.format(Locale.US, "%.2f", val * lastPrice);
+                } else {
+                    // Euro to Shares
+                    // If we are switching back and the value is close to the initial quantity, use it to avoid rounding
+                    double backToShares = val / lastPrice;
+                    if (Math.abs(backToShares - initialQuantity) < 0.0001) {
+                        lastSetQuantityText = String.valueOf(initialQuantity);
+                    } else {
+                        lastSetQuantityText = String.format(Locale.US, "%.4f", backToShares);
+                    }
+                }
+                etQuantity.setText(lastSetQuantityText);
+            } catch (NumberFormatException ignored) {}
         });
 
         etIdentifier.addTextChangedListener(new TextWatcher() {
@@ -127,54 +171,31 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         btnAdd.setEnabled(false);
 
         boolean isEuro = swUnit.isChecked();
+        boolean quantityFieldUnchanged = qtyInputStr.equals(lastSetQuantityText);
 
-        yahooFinanceService.addSecurity(identifierInput, aliasInput, 1.0, new YahooFinanceService.Callback<Security>() {
+        yahooFinanceService.searchSecurities(identifierInput, aliasInput, new YahooFinanceService.Callback<List<Security>>() {
             @Override
-            public void onSuccess(Security newSecurity) {
+            public void onSuccess(List<Security> results) {
                 runOnUiThread(() -> {
                     pbSearching.setVisibility(View.GONE);
                     btnAdd.setEnabled(true);
-
-                    double finalQuantity;
-                    if (isEuro) {
-                        List<Double> values = newSecurity.getValuesOverTime();
-                        if (values.isEmpty() || values.get(values.size() - 1) == 0) {
-                            finalQuantity = 0;
-                            if (inputValue > 0) {
-                                Toast.makeText(ManageSecuritiesActivity.this, "Price lookup failed, quantity set to 0", Toast.LENGTH_LONG).show();
-                            }
-                        } else {
-                            finalQuantity = inputValue / values.get(values.size() - 1);
+                    
+                    List<Security> filteredResults = new ArrayList<>();
+                    for (Security s : results) {
+                        if (s.getNumberOfEntries() > 1) {
+                            filteredResults.add(s);
                         }
-                    } else {
-                        finalQuantity = inputValue;
                     }
 
-                    if (editingSecurity != null) {
-                        editingSecurity.setName(newSecurity.getName());
-                        editingSecurity.setIdentifier(newSecurity.getIdentifier());
-                        editingSecurity.setAlias(newSecurity.getAlias());
-                        editingSecurity.setValuesOverTime(newSecurity.getValuesOverTime());
-                        editingSecurity.setDates(newSecurity.getDates());
-                        editingSecurity.setQuantity(finalQuantity);
-                        
-                        portfolio.save(ManageSecuritiesActivity.this);
-                        adapter.notifyDataSetChanged();
-                        Toast.makeText(ManageSecuritiesActivity.this, "Updated: " + editingSecurity.getName(), Toast.LENGTH_SHORT).show();
-                        clearInputs();
-                    } else {
-                        if (portfolio.getSecurities().size() >= 24) {
-                            Toast.makeText(ManageSecuritiesActivity.this, "Limit of 24 securities reached", Toast.LENGTH_SHORT).show();
-                            return;
-                        }
+                    if (filteredResults.isEmpty()) {
+                        showErrorDialog("Search failed", "No valid securities with historical data found.");
+                        return;
+                    }
 
-                        newSecurity.setQuantity(finalQuantity);
-                        if (portfolio.addSecurity(newSecurity)) {
-                            portfolio.save(ManageSecuritiesActivity.this);
-                            adapter.notifyDataSetChanged();
-                            clearInputs();
-                            Toast.makeText(ManageSecuritiesActivity.this, String.format(java.util.Locale.getDefault(), "Added: %s (%.2f units)", newSecurity.getName(), finalQuantity), Toast.LENGTH_SHORT).show();
-                        }
+                    if (filteredResults.size() == 1) {
+                        finalizeAddition(filteredResults.get(0), inputValue, isEuro, quantityFieldUnchanged);
+                    } else {
+                        showSelectionDialog(filteredResults, inputValue, isEuro, quantityFieldUnchanged);
                     }
                 });
             }
@@ -184,10 +205,72 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     pbSearching.setVisibility(View.GONE);
                     btnAdd.setEnabled(true);
-                    showErrorDialog("Error", errorMessage);
+                    showErrorDialog("Search failed", errorMessage);
                 });
             }
         });
+    }
+
+    private void showSelectionDialog(List<Security> results, double inputValue, boolean isEuro, boolean quantityFieldUnchanged) {
+        String[] options = new String[results.size()];
+        for (int i = 0; i < results.size(); i++) {
+            Security s = results.get(i);
+            options[i] = String.format(Locale.getDefault(), "%s (%s)\nData Points: %d", 
+                    s.getName(), s.getSymbol(), s.getNumberOfEntries());
+        }
+
+        new AlertDialog.Builder(this)
+                .setTitle("Select the correct Ticker")
+                .setItems(options, (dialog, which) -> {
+                    finalizeAddition(results.get(which), inputValue, isEuro, quantityFieldUnchanged);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void finalizeAddition(Security selectedSecurity, double inputValue, boolean isEuro, boolean quantityFieldUnchanged) {
+        double finalQuantity;
+        
+        if (editingSecurity != null && quantityFieldUnchanged) {
+            finalQuantity = initialQuantity;
+        } else if (isEuro) {
+            List<Double> values = selectedSecurity.getValuesOverTime();
+            if (values.isEmpty() || values.get(values.size() - 1) == 0) {
+                finalQuantity = 0;
+                Toast.makeText(this, "Price lookup failed, quantity set to 0", Toast.LENGTH_LONG).show();
+            } else {
+                finalQuantity = inputValue / values.get(values.size() - 1);
+            }
+        } else {
+            finalQuantity = inputValue;
+        }
+
+        if (editingSecurity != null) {
+            editingSecurity.setName(selectedSecurity.getName());
+            editingSecurity.setSymbol(selectedSecurity.getSymbol());
+            editingSecurity.setAlias(selectedSecurity.getAlias());
+            editingSecurity.setValuesOverTime(selectedSecurity.getValuesOverTime());
+            editingSecurity.setDates(selectedSecurity.getDates());
+            editingSecurity.setQuantity(finalQuantity);
+            
+            portfolio.save(this);
+            adapter.notifyDataSetChanged();
+            Toast.makeText(this, "Updated: " + editingSecurity.getDisplayName(), Toast.LENGTH_SHORT).show();
+            clearInputs();
+        } else {
+            if (portfolio.getSecurities().size() >= 24) {
+                Toast.makeText(this, "Limit reached", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            selectedSecurity.setQuantity(finalQuantity);
+            if (portfolio.addSecurity(selectedSecurity)) {
+                portfolio.save(this);
+                adapter.notifyDataSetChanged();
+                clearInputs();
+                Toast.makeText(this, "Added: " + selectedSecurity.getDisplayName(), Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void showErrorDialog(String title, String message) {
@@ -207,6 +290,8 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         viewColorPreview.setBackgroundColor(android.graphics.Color.GRAY);
         etIdentifier.setEnabled(true);
         btnAdd.setText("Add");
+        lastSetQuantityText = "";
+        initialQuantity = 0;
     }
 
     @Override

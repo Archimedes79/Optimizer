@@ -15,8 +15,8 @@ import java.util.Random;
  */
 public class Security {
     private String name;       // Yahoo Finance Name (Shortname)
-    private String alias;      // Original search term
-    private String identifier; // WKN, ISIN or Ticker (Yahoo's best available)
+    private String alias;      // Original search term or custom name
+    private String symbol;     // Yahoo Finance Ticker (e.g. AAPL, VWRL.AS) - Primary Identifier
     private List<Double> valuesOverTime;
     private List<String> dates; // Corresponding dates for valuesOverTime, format "yyyy-MM-dd"
     private double quantity;
@@ -27,13 +27,13 @@ public class Security {
         this.dates = new ArrayList<>();
     }
 
-    public Security(String name, String identifier, double quantity) {
+    public Security(String name, String symbol, double quantity) {
         this.name = name;
-        this.identifier = identifier;
+        this.symbol = symbol;
         this.valuesOverTime = new ArrayList<>();
         this.dates = new ArrayList<>();
         this.quantity = quantity;
-        this.color = generateConsistentColor(identifier);
+        this.color = generateConsistentColor(symbol);
     }
 
     public static int generateConsistentColor(String seed) {
@@ -96,12 +96,18 @@ public class Security {
     
     public String getAlias() { return alias; }
     public void setAlias(String alias) { this.alias = alias; }
-    
-    public String getIdentifier() { return identifier; }
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-        if (this.color == 0 || this.color == Color.GRAY) this.color = generateConsistentColor(identifier);
+
+    public String getDisplayName() {
+        return (alias != null && !alias.isEmpty()) ? alias : name;
     }
+    
+    public String getSymbol() { return symbol; }
+    public void setSymbol(String symbol) { 
+        this.symbol = symbol; 
+        if (this.color == 0 || this.color == Color.GRAY) this.color = generateConsistentColor(symbol);
+    }
+
+    public String getIdentifier() { return symbol; }
     
     public List<Double> getValuesOverTime() {
         if (valuesOverTime == null) valuesOverTime = new ArrayList<>();
@@ -123,12 +129,10 @@ public class Security {
     public double getQuantity() { return quantity; }
     public void setQuantity(double quantity) { this.quantity = quantity; }
 
-    public int getColor() { return (color == 0) ? color = generateConsistentColor(identifier) : color; }
+    public int getColor() { return (color == 0) ? color = generateConsistentColor(symbol) : color; }
     public void setColor(int color) { this.color = color; }
 
     public int getNumberOfEntries() {
         return getValuesOverTime().size();
     }
-
-    public void refreshData() { /* Implementation as before */ }
 }

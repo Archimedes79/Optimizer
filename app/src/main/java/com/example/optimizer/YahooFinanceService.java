@@ -14,7 +14,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.net.UnknownHostException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -42,87 +41,66 @@ public class YahooFinanceService {
         void onError(String errorMessage);
     }
 
-    public void addSecurity(String identifier, String fallbackName, double quantity, Callback<Security> callback) {
+    /**
+     * Searches for potential securities and fetches their data availability.
+     */
+    public void searchSecurities(String query, String alias, Callback<List<Security>> callback) {
         executor.execute(() -> {
-            // Step 1: Try searching by the primary identifier
-            if (performSearchAndPopulate(identifier, null, null, quantity, callback)) {
-                return;
-            }
+            try {
+                String encodedSearch = URLEncoder.encode(query.trim(), "UTF-8");
+                String searchResponse = makeRequest(SEARCH_URL + encodedSearch);
+                JsonObject searchJson = gson.fromJson(searchResponse, JsonObject.class);
 
-            // Step 2: Try searching by fallback name if provided
-            if (fallbackName != null && !fallbackName.trim().isEmpty()) {
-                if (performSearchAndPopulate(fallbackName, null, fallbackName, quantity, callback)) {
+                JsonArray quotes = searchJson.getAsJsonArray("quotes");
+                if (quotes == null || quotes.size() == 0) {
+                    mainHandler.post(() -> callback.onError("No results found for: " + query));
                     return;
                 }
-            }
 
-            mainHandler.post(() -> callback.onError("Could not find security by ID or Name: " + identifier));
+                List<Security> results = new ArrayList<>();
+                int limit = Math.min(quotes.size(), 10);
+                
+                for (int i = 0; i < limit; i++) {
+                    JsonObject quote = quotes.get(i).getAsJsonObject();
+                    if (!quote.has("symbol")) continue;
+
+                    String symbol = quote.get("symbol").getAsString();
+                    String name = quote.has("shortname") ? quote.get("shortname").getAsString() : 
+                                 (quote.has("longname") ? quote.get("longname").getAsString() : symbol);
+
+                    Security s = new Security();
+                    s.setSymbol(symbol);
+                    s.setName(name);
+                    if (alias != null && !alias.isEmpty()) s.setAlias(alias);
+                    
+                    // Fetch basic chart data to determine data availability (number of entries)
+                    fetchDataSync(s, "max");
+                    
+                    if (!s.getValuesOverTime().isEmpty()) {
+                        results.add(s);
+                    }
+                }
+
+                if (results.isEmpty()) {
+                    mainHandler.post(() -> callback.onError("No valid securities found with chart data."));
+                } else {
+                    mainHandler.post(() -> callback.onSuccess(results));
+                }
+
+            } catch (Exception e) {
+                mainHandler.post(() -> callback.onError("Search failed: " + e.getMessage()));
+            }
         });
     }
 
-    /**
-     * Unifies the search, mapping, and population logic for adding and syncing.
-     */
-    private boolean performSearchAndPopulate(String searchTerm, Security existingSecurity, String alias, double quantity, Callback<Security> callback) {
+    private void fetchDataSync(Security security, String range) {
         try {
-            String encodedSearch = URLEncoder.encode(searchTerm.trim(), "UTF-8");
-            String searchResponse = makeRequest(SEARCH_URL + encodedSearch);
-            JsonObject searchJson = gson.fromJson(searchResponse, JsonObject.class);
-
-            JsonArray quotes = searchJson.getAsJsonArray("quotes");
-            if (quotes == null || quotes.size() == 0) return false;
-
-            // Try the top few results to find one with valid chart data
-            for (int i = 0; i < Math.min(quotes.size(), 8); i++) {
-                JsonObject quote = quotes.get(i).getAsJsonObject();
-                if (!quote.has("symbol")) continue;
-
-                String symbol = quote.get("symbol").getAsString();
-                String name = quote.has("shortname") ? quote.get("shortname").getAsString() : 
-                             (quote.has("longname") ? quote.get("longname").getAsString() : symbol);
-
-                // Priority mapping: ISIN -> Ticker (symbol) -> WKN
-                String bestId = null;
-                if (quote.has("isin")) {
-                    bestId = quote.get("isin").getAsString();
-                } else if (quote.has("symbol")) {
-                    bestId = quote.get("symbol").getAsString();
-                } else if (quote.has("wkn")) {
-                    bestId = quote.get("wkn").getAsString();
-                }
-
-                if (bestId == null) continue;
-
-                // Attempt to fetch data and populate the security object (one function to rule them all)
-                if (tryPopulate(symbol, name, bestId, existingSecurity, alias, quantity, "20y", callback)) return true;
-                if (tryPopulate(symbol, name, bestId, existingSecurity, alias, quantity, "max", callback)) return true;
-            }
-        } catch (Exception e) {
-            return false;
-        }
-        return false;
-    }
-
-    private boolean tryPopulate(String symbol, String name, String bestId, Security existingSecurity, String alias, double qty, String range, Callback<Security> callback) {
-        try {
+            String symbol = security.getSymbol();
             String dataUrl = CHART_URL + URLEncoder.encode(symbol, "UTF-8") + "?range=" + range + "&interval=1mo";
             String dataResponse = makeRequest(dataUrl);
             JsonObject dataJson = gson.fromJson(dataResponse, JsonObject.class);
-
-            Security security = (existingSecurity != null) ? existingSecurity : new Security();
-            security.setName(name);
-            security.setIdentifier(bestId);
-            security.setQuantity(qty);
-            if (alias != null) security.setAlias(alias);
-
-            if (populateSecurityData(security, dataJson)) {
-                if (callback != null) {
-                    mainHandler.post(() -> callback.onSuccess(security));
-                }
-                return true;
-            }
+            populateSecurityData(security, dataJson);
         } catch (Exception ignored) {}
-        return false;
     }
 
     public void syncPortfolio(Portfolio portfolio, Callback<Void> callback) {
@@ -130,9 +108,8 @@ public class YahooFinanceService {
             try {
                 List<Security> securities = portfolio.getSecurities();
                 for (Security security : securities) {
-                    // Use the unified search and populate logic to refresh data and IDs
-                    performSearchAndPopulate(security.getIdentifier(), security, null, security.getQuantity(), null);
-                    Thread.sleep(200); // Respect API rate limits
+                    fetchDataSync(security, "max");
+                    Thread.sleep(200);
                 }
                 mainHandler.post(() -> callback.onSuccess(null));
             } catch (Exception e) {

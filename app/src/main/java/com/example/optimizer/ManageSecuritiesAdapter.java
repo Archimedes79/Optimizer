@@ -1,6 +1,8 @@
 package com.example.optimizer;
 
 import android.graphics.Color;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,15 +14,20 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Random;
 
 public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuritiesAdapter.ViewHolder> {
 
     private List<Security> securities;
     private OnSecurityActionListener listener;
+    
+    private long lastClickTime = 0;
+    private static final long DOUBLE_CLICK_TIME_DELTA = 300; // milliseconds
 
     public interface OnSecurityActionListener {
         void onSecurityRemoved(Security security);
         void onSecurityClicked(Security security);
+        void onSecurityColorChanged(Security security);
     }
 
     public ManageSecuritiesAdapter(List<Security> securities, OnSecurityActionListener listener) {
@@ -46,7 +53,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         holder.tvIdentifier.setText(details);
 
         if (security.getAlias() != null && !security.getAlias().isEmpty()) {
-            holder.tvAlias.setText("Search: " + security.getAlias());
+            holder.tvAlias.setText("Alias: " + security.getAlias());
             holder.tvAlias.setVisibility(View.VISIBLE);
         } else {
             holder.tvAlias.setVisibility(View.GONE);
@@ -77,9 +84,23 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         });
 
         holder.itemView.setOnClickListener(v -> {
-            if (listener != null) {
-                listener.onSecurityClicked(security);
+            long clickTime = System.currentTimeMillis();
+            if (clickTime - lastClickTime < DOUBLE_CLICK_TIME_DELTA) {
+                // Double click detected
+                Random random = new Random();
+                int newColor = Color.rgb(random.nextInt(256), random.nextInt(256), random.nextInt(256));
+                security.setColor(newColor);
+                notifyItemChanged(position);
+                if (listener != null) {
+                    listener.onSecurityColorChanged(security);
+                }
+            } else {
+                // Single click
+                if (listener != null) {
+                    listener.onSecurityClicked(security);
+                }
             }
+            lastClickTime = clickTime;
         });
     }
 

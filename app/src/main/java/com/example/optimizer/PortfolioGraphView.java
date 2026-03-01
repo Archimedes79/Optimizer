@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.components.Legend;
 import com.github.mikephil.charting.components.XAxis;
 import com.github.mikephil.charting.components.YAxis;
 import com.github.mikephil.charting.data.Entry;
@@ -84,7 +85,13 @@ public class PortfolioGraphView extends FrameLayout {
         markerView = new PortfolioMarkerView(context, R.layout.graph_marker);
         chart.setMarker(markerView);
 
-        chart.getLegend().setEnabled(true);
+        Legend legend = chart.getLegend();
+        legend.setEnabled(true);
+        legend.setWordWrapEnabled(true);
+        legend.setVerticalAlignment(Legend.LegendVerticalAlignment.BOTTOM);
+        legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT);
+        legend.setOrientation(Legend.LegendOrientation.HORIZONTAL);
+        legend.setDrawInside(false);
 
         // Custom Zoom/Drag Logic
         chart.setOnTouchListener(new OnTouchListener() {
@@ -203,7 +210,7 @@ public class PortfolioGraphView extends FrameLayout {
                 entries.add(new Entry(j, normalizedValue));
             }
             
-            LineDataSet set = new LineDataSet(entries, s.getName());
+            LineDataSet set = new LineDataSet(entries, s.getDisplayName());
             int baseColor = s.getColor();
             int alphaColor = Color.argb(120, Color.red(baseColor), Color.green(baseColor), Color.blue(baseColor));
             set.setColor(alphaColor);
