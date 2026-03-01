@@ -75,7 +75,7 @@ public class PortfolioGraphView extends FrameLayout {
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
         xAxis.setGranularity(1f);
-        xAxis.setValueFormatter(new DateFormatter());
+        xAxis.setValueFormatter(new DynamicDateFormatter());
 
         YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
@@ -239,31 +239,31 @@ public class PortfolioGraphView extends FrameLayout {
         applyZoom(false); // Don't notify listeners during data updates to avoid infinite recursion
     }
 
-    private class DateFormatter extends ValueFormatter {
-        private final SimpleDateFormat monthFormat = new SimpleDateFormat("MM/yy", Locale.getDefault());
-
+    private class DynamicDateFormatter extends ValueFormatter {
         @Override
         public String getFormattedValue(float value) {
             int index = (int) value;
             
-            // Try to use real dates from the first security if available
             if (currentSecurities != null && !currentSecurities.isEmpty()) {
                 Security first = currentSecurities.get(0);
-                List<String> dates = first.getDates();
-                if (dates != null && !dates.isEmpty()) {
-                    int offset = first.getValuesOverTime().size() - currentMaxEntries;
-                    int dateIndex = offset + index;
-                    if (dateIndex >= 0 && dateIndex < dates.size()) {
-                        return dates.get(dateIndex);
+                int offset = first.getValuesOverTime().size() - currentMaxEntries;
+                int dateIndex = offset + index;
+                
+                if (dateIndex >= 0 && dateIndex < first.getDates().size()) {
+                    // Logic to adjust formatting based on zoom level (visible range)
+                    if (currentVisibleCount < 12) {
+                        // High Zoom: Show Day and Month
+                        return first.getDayString(dateIndex) + " " + first.getMonthString(dateIndex);
+                    } else if (currentVisibleCount < 48) {
+                        // Medium Zoom: Show Month and Year
+                        return first.getMonthString(dateIndex) + " '" + first.getYearString(dateIndex);
+                    } else {
+                        // Low Zoom / Wide Range: Show only Year
+                        return "'" + first.getYearString(dateIndex);
                     }
                 }
             }
-            
-            // Fallback to month calculation
-            Calendar cal = Calendar.getInstance();
-            int monthsBack = (currentMaxEntries - 1) - index;
-            cal.add(Calendar.MONTH, -monthsBack);
-            return monthFormat.format(cal.getTime());
+            return "";
         }
     }
 }
