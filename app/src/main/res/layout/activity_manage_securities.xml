@@ -14,6 +14,8 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:hint="WKN or ISIN"
+        app:hintTextColor="@color/primaryDarkColor"
+        app:boxStrokeColor="@color/primaryDarkColor"
         app:layout_constraintEnd_toStartOf="@+id/tilQuantity"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
@@ -23,7 +25,8 @@
             android:id="@+id/etIdentifier"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAllCaps="true" />
+            android:textAllCaps="true"
+            android:textColor="@color/black" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -33,6 +36,8 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:hint="Qty"
+        app:hintTextColor="@color/primaryDarkColor"
+        app:boxStrokeColor="@color/primaryDarkColor"
         app:layout_constraintEnd_toStartOf="@+id/btnAddSecurity"
         app:layout_constraintStart_toEndOf="@+id/tilIdentifier"
         app:layout_constraintTop_toTopOf="parent"
@@ -42,7 +47,8 @@
             android:id="@+id/etQuantity"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:inputType="number" />
+            android:inputType="number"
+            android:textColor="@color/black" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.textfield.TextInputLayout
@@ -52,6 +58,8 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:hint="Optional Name"
+        app:hintTextColor="@color/primaryDarkColor"
+        app:boxStrokeColor="@color/primaryDarkColor"
         app:layout_constraintEnd_toEndOf="@+id/tilQuantity"
         app:layout_constraintStart_toStartOf="@+id/tilIdentifier"
         app:layout_constraintTop_toBottomOf="@id/tilIdentifier">
@@ -59,7 +67,8 @@
         <com.google.android.material.textfield.TextInputEditText
             android:id="@+id/etCustomName"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:textColor="@color/black" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <com.google.android.material.button.MaterialButton

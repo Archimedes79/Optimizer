@@ -1,5 +1,6 @@
 package com.example.optimizer;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Color;
 import android.util.AttributeSet;
@@ -32,6 +33,11 @@ public class PortfolioGraphView extends FrameLayout {
     private int currentMaxEntries = 240;
     private float currentVisibleCount = 240;
     private PortfolioMarkerView markerView;
+    private OnVisibleRangeChangeListener visibleRangeChangeListener;
+
+    public interface OnVisibleRangeChangeListener {
+        void onVisibleRangeChanged(float visibleCount);
+    }
 
     public PortfolioGraphView(@NonNull Context context) {
         super(context);
@@ -43,6 +49,15 @@ public class PortfolioGraphView extends FrameLayout {
         init(context);
     }
 
+    public void setOnVisibleRangeChangeListener(OnVisibleRangeChangeListener listener) {
+        this.visibleRangeChangeListener = listener;
+    }
+
+    public float getCurrentVisibleCount() {
+        return currentVisibleCount;
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
     private void init(Context context) {
         chart = new LineChart(context);
         addView(chart);
@@ -97,12 +112,13 @@ public class PortfolioGraphView extends FrameLayout {
                         if (currentVisibleCount < 5) currentVisibleCount = 5;
                         if (currentVisibleCount > currentMaxEntries) currentVisibleCount = currentMaxEntries;
                         
-                        applyZoom();
+                        applyZoom(true); // Notify listeners when changed by user touch
                         chart.onTouchEvent(event);
                         return true;
                     case MotionEvent.ACTION_UP:
                     case MotionEvent.ACTION_CANCEL:
                         chart.onTouchEvent(event);
+                        v.performClick();
                         return true;
                 }
                 return false;
@@ -110,7 +126,7 @@ public class PortfolioGraphView extends FrameLayout {
         });
     }
 
-    private void applyZoom() {
+    private void applyZoom(boolean notifyListener) {
         if (chart.getData() == null) return;
         
         // Force the window to always end at the most recent date (currentMaxEntries - 1)
@@ -118,6 +134,10 @@ public class PortfolioGraphView extends FrameLayout {
         chart.setVisibleXRangeMinimum(currentVisibleCount);
         chart.moveViewToX(currentMaxEntries - currentVisibleCount);
         chart.invalidate();
+
+        if (notifyListener && visibleRangeChangeListener != null) {
+            visibleRangeChangeListener.onVisibleRangeChanged(currentVisibleCount);
+        }
     }
 
     public void setSecurities(List<Security> securities) {
@@ -180,8 +200,9 @@ public class PortfolioGraphView extends FrameLayout {
             }
             
             LineDataSet set = new LineDataSet(entries, s.getName());
-            int color = colors[i % colors.length];
-            set.setColor(Color.argb(120, Color.red(color), Color.green(color), Color.blue(color)));
+            int baseColor = colors[i % colors.length];
+            int alphaColor = Color.argb(120, Color.red(baseColor), Color.green(baseColor), Color.blue(baseColor));
+            set.setColor(alphaColor);
             set.setDrawCircles(false);
             set.setLineWidth(1.0f);
             dataSets.add(set);
@@ -211,7 +232,7 @@ public class PortfolioGraphView extends FrameLayout {
         xAxis.setAxisMinimum(0);
         xAxis.setAxisMaximum(minEntries - 1);
         
-        applyZoom();
+        applyZoom(false); // Don't notify listeners during data updates to avoid infinite recursion
     }
 
     private class DateFormatter extends ValueFormatter {

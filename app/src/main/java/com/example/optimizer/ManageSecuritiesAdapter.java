@@ -1,5 +1,6 @@
 package com.example.optimizer;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -41,6 +42,23 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         holder.tvIdentifier.setText(security.getIdentifier());
         holder.tvQuantity.setText("Quantity: " + security.getQuantity());
 
+        // Marking only the security with the absolute minimum time series data (least historical duration)
+        int minCount = Integer.MAX_VALUE;
+        for (Security s : securities) {
+            minCount = Math.min(minCount, s.getNumberOfEntries());
+        }
+
+        // Only mark if there are at least two assets and this one is at the minimum duration
+        boolean isLimiting = (securities.size() > 1) && (security.getNumberOfEntries() == minCount);
+        
+        if (isLimiting) {
+            holder.tvLimitingMarker.setVisibility(View.VISIBLE);
+            holder.itemView.setBackgroundColor(Color.parseColor("#11FF0000")); // Very subtle red tint
+        } else {
+            holder.tvLimitingMarker.setVisibility(View.GONE);
+            holder.itemView.setBackgroundColor(Color.TRANSPARENT);
+        }
+
         holder.btnRemove.setOnClickListener(v -> {
             if (listener != null) {
                 listener.onSecurityRemoved(security);
@@ -63,6 +81,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         public TextView tvName;
         public TextView tvIdentifier;
         public TextView tvQuantity;
+        public TextView tvLimitingMarker;
         public ImageButton btnRemove;
 
         public ViewHolder(View view) {
@@ -70,6 +89,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
             tvName = view.findViewById(R.id.tvManageName);
             tvIdentifier = view.findViewById(R.id.tvManageIdentifier);
             tvQuantity = view.findViewById(R.id.tvManageQuantity);
+            tvLimitingMarker = view.findViewById(R.id.tvLimitingMarker);
             btnRemove = view.findViewById(R.id.btnRemoveSecurity);
         }
     }

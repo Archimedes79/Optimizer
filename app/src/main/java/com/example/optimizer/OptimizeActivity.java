@@ -53,7 +53,11 @@ public class OptimizeActivity extends AppCompatActivity {
         tvQuantities = findViewById(R.id.tvQuantities);
         Button btnBack = findViewById(R.id.btnBack);
 
-        calculateOptimization();
+        // Calculate optimization whenever the visible range changes
+        graphView.setOnVisibleRangeChangeListener(visibleCount -> {
+            calculateOptimization((int) visibleCount);
+            updateUI();
+        });
 
         SeekBar.OnSeekBarChangeListener listener = new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -72,6 +76,8 @@ public class OptimizeActivity extends AppCompatActivity {
         sbMinDrawdown.setOnSeekBarChangeListener(listener);
 
         btnBack.setOnClickListener(v -> finish());
+        
+        // Initial setup
         updateUI();
     }
 
@@ -102,19 +108,7 @@ public class OptimizeActivity extends AppCompatActivity {
         s2.setProgress(Math.max(0, p2 - red2));
     }
 
-    /**
-     * Reasoning:
-     * Maximum Drawdown (MDD) is the maximum loss from a peak to a trough of a portfolio, before a new peak is attained.
-     * Logic:
-     * 1. For each security, we track its cumulative peak price over the visible time window.
-     * 2. Drawdown at time t = (Peak_Price_up_to_t - Price_t) / Peak_Price_up_to_t.
-     * 3. Max Drawdown = Max(all historical drawdowns).
-     * 
-     * Strategy:
-     * Similar to Min Variance, we aim to weight assets with LOW Maximum Drawdowns higher.
-     * Weight_i = (1 / MDD_i) / Sum(1 / MDD_j).
-     */
-    private void calculateOptimization() {
+    private void calculateOptimization(int visibleWindow) {
         if (securities == null || securities.isEmpty()) return;
 
         int n = securities.size();
@@ -132,38 +126,49 @@ public class OptimizeActivity extends AppCompatActivity {
         for (int i = 0; i < n; i++) {
             Security s = securities.get(i);
             currentQuantities[i] = s.getQuantity();
-            List<Double> values = s.getValuesOverTime();
-            if (values.isEmpty()) continue;
+            List<Double> allValues = s.getValuesOverTime();
+            if (allValues.isEmpty()) continue;
+            
+            // Align with the window shown on screen (last 'visibleWindow' points of the graph duration)
+            int startIdx = Math.max(0, allValues.size() - visibleWindow);
+            List<Double> values = allValues.subList(startIdx, allValues.size());
             
             latestPrices[i] = values.get(values.size() - 1);
             currentTotalValue += currentQuantities[i] * latestPrices[i];
 
             if (values.size() > 1) {
-                // Returns and Variance
-                List<Double> returns = new ArrayList<>();
+                // Return metric: Use Total Return over the visible period to match visual "slope"
+                double firstPrice = values.get(0);
+                double lastPrice = values.get(values.size() - 1);
+                expectations[i] = (lastPrice / firstPrice) - 1.0;
+
+                // Periodic returns for Variance and Drawdown
+                List<Double> periodicReturns = new ArrayList<>();
                 double peak = values.get(0);
                 double mdd = 0;
+                double sumPeriodic = 0;
                 
                 for (int j = 1; j < values.size(); j++) {
                     double val = values.get(j);
-                    returns.add((val - values.get(j - 1)) / values.get(j - 1));
+                    double prev = values.get(j - 1);
+                    double r = (val - prev) / prev;
+                    periodicReturns.add(r);
+                    sumPeriodic += r;
                     
                     if (val > peak) peak = val;
                     double dd = (peak - val) / peak;
                     if (dd > mdd) mdd = dd;
                 }
                 
-                double sum = 0;
-                for (double r : returns) sum += r;
-                expectations[i] = sum / returns.size();
-                
+                double avgPeriodic = sumPeriodic / periodicReturns.size();
                 double sqSum = 0;
-                for (double r : returns) sqSum += (r - expectations[i]) * (r - expectations[i]);
-                variances[i] = sqSum / returns.size();
-                maxDrawdowns[i] = Math.max(0.01, mdd); // Avoid div by zero
+                for (double r : periodicReturns) sqSum += (r - avgPeriodic) * (r - avgPeriodic);
+                
+                variances[i] = sqSum / periodicReturns.size();
+                maxDrawdowns[i] = Math.max(0.01, mdd);
             } else {
                 variances[i] = 1.0;
-                expectations[i] = 0;
+                expectations[i] = -1.0; // Minimal expectation for single point
                 maxDrawdowns[i] = 1.0;
             }
         }
@@ -172,9 +177,13 @@ public class OptimizeActivity extends AppCompatActivity {
         double invVarSum = 0;
         for (double v : variances) if (v > 0) invVarSum += (1.0 / v);
         
-        // 2. Max Exp (Best single asset)
+        // 2. Max Exp (Best single asset by Total Return in window)
         int bestExpIdx = 0;
-        for (int i = 1; i < n; i++) if (expectations[i] > expectations[bestExpIdx]) bestExpIdx = i;
+        for (int i = 1; i < n; i++) {
+            if (expectations[i] > expectations[bestExpIdx]) {
+                bestExpIdx = i;
+            }
+        }
 
         // 3. Min Drawdown Weights (Inverse MDD)
         double invMddSum = 0;
@@ -182,12 +191,15 @@ public class OptimizeActivity extends AppCompatActivity {
 
         for (int i = 0; i < n; i++) {
             if (latestPrices[i] > 0) {
+                // Min Variance Allocation
                 double vWeight = (variances[i] > 0) ? (1.0 / variances[i]) / invVarSum : 0;
                 minVarQuantities[i] = (currentTotalValue * vWeight) / latestPrices[i];
                 
+                // Max Expectation Allocation (Full weight to the steepest asset in window)
                 double eWeight = (i == bestExpIdx) ? 1.0 : 0.0;
                 maxExpQuantities[i] = (currentTotalValue * eWeight) / latestPrices[i];
 
+                // Min Drawdown Allocation
                 double mWeight = (1.0 / maxDrawdowns[i]) / invMddSum;
                 minDrawdownQuantities[i] = (currentTotalValue * mWeight) / latestPrices[i];
             }
@@ -195,6 +207,10 @@ public class OptimizeActivity extends AppCompatActivity {
     }
 
     private void updateUI() {
+        if (graphView != null) {
+            calculateOptimization((int) graphView.getCurrentVisibleCount());
+        }
+
         int varP = sbReduceVariance.getProgress();
         int expP = sbMaxExpectation.getProgress();
         int mddP = sbMinDrawdown.getProgress();
@@ -209,6 +225,7 @@ public class OptimizeActivity extends AppCompatActivity {
         double mF = mddP / 100.0;
         double cF = curP / 100.0;
 
+        if (securities == null) return;
         int n = securities.size();
         double[] displayQuantities = new double[n];
         StringBuilder sb = new StringBuilder("Required Quantities:\n");
