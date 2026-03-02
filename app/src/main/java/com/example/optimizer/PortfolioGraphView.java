@@ -21,11 +21,8 @@ import com.github.mikephil.charting.data.LineDataSet;
 import com.github.mikephil.charting.formatter.ValueFormatter;
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.List;
-import java.util.Locale;
 
 public class PortfolioGraphView extends FrameLayout {
 
@@ -165,7 +162,7 @@ public class PortfolioGraphView extends FrameLayout {
 
         int minEntries = Integer.MAX_VALUE;
         for (Security s : securities) {
-            minEntries = Math.min(minEntries, s.getValuesOverTime().size());
+            minEntries = Math.min(minEntries, s.getNumberOfEntries());
         }
         
         if (minEntries < 2) {
@@ -187,26 +184,30 @@ public class PortfolioGraphView extends FrameLayout {
 
         if (markerView != null) {
             Security first = securities.get(0);
-            markerView.setDateSource(first.getDates(), first.getValuesOverTime().size() - minEntries);
+            markerView.setDateSource(first.getDates(), first.getNumberOfEntries() - minEntries);
         }
 
         float lastTotalValue = 0;
         for (int i = 0; i < securities.size(); i++) {
-            List<Double> values = securities.get(i).getValuesOverTime();
-            lastTotalValue += (float) (values.get(values.size() - 1) * quantities[i]);
+            double[] values = securities.get(i).getValuesOverTime();
+            if (values != null && values.length > 0) {
+                lastTotalValue += (float) (values[values.length - 1] * quantities[i]);
+            }
         }
 
         List<ILineDataSet> dataSets = new ArrayList<>();
 
         for (int i = 0; i < securities.size(); i++) {
             Security s = securities.get(i);
-            List<Double> values = s.getValuesOverTime();
-            int startIdx = values.size() - minEntries;
-            double lastValue = values.get(values.size() - 1);
+            double[] values = s.getValuesOverTime();
+            if (values == null || values.length == 0) continue;
+            
+            int startIdx = values.length - minEntries;
+            double lastValue = values[values.length - 1];
             
             List<Entry> entries = new ArrayList<>();
             for (int j = 0; j < minEntries; j++) {
-                float normalizedValue = (float) ((values.get(startIdx + j) / lastValue) * 100.0);
+                float normalizedValue = (float) ((values[startIdx + j] / lastValue) * 100.0);
                 entries.add(new Entry(j, normalizedValue));
             }
             
@@ -224,8 +225,10 @@ public class PortfolioGraphView extends FrameLayout {
             for (int j = 0; j < minEntries; j++) {
                 float sum = 0;
                 for (int i = 0; i < securities.size(); i++) {
-                    List<Double> values = securities.get(i).getValuesOverTime();
-                    sum += (float) (values.get(values.size() - minEntries + j) * quantities[i]);
+                    double[] values = securities.get(i).getValuesOverTime();
+                    if (values != null && values.length >= minEntries) {
+                        sum += (float) (values[values.length - minEntries + j] * quantities[i]);
+                    }
                 }
                 totalEntries.add(new Entry(j, (sum / lastTotalValue) * 100.0f));
             }
@@ -253,7 +256,7 @@ public class PortfolioGraphView extends FrameLayout {
             
             if (currentSecurities != null && !currentSecurities.isEmpty()) {
                 Security first = currentSecurities.get(0);
-                int offset = first.getValuesOverTime().size() - currentMaxEntries;
+                int offset = first.getNumberOfEntries() - currentMaxEntries;
                 int dateIndex = offset + index;
                 
                 if (dateIndex >= 0 && dateIndex < first.getDates().size()) {

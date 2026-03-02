@@ -113,9 +113,9 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             
             try {
                 double val = Double.parseDouble(currentText);
-                List<Double> values = editingSecurity.getValuesOverTime();
-                if (values.isEmpty()) return;
-                double lastPrice = values.get(values.size() - 1);
+                double[] values = editingSecurity.getValuesOverTime();
+                if (values == null || values.length == 0) return;
+                double lastPrice = values[values.length - 1];
                 if (lastPrice <= 0) return;
                 
                 if (isChecked) {
@@ -242,12 +242,12 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         if (editingSecurity != null && quantityFieldUnchanged) {
             finalQuantity = initialQuantity;
         } else if (isEuro) {
-            List<Double> values = selectedSecurity.getValuesOverTime();
-            if (values.isEmpty() || values.get(values.size() - 1) == 0) {
+            double[] values = selectedSecurity.getValuesOverTime();
+            if (values == null || values.length == 0 || values[values.length - 1] == 0) {
                 finalQuantity = 0;
                 Toast.makeText(this, "Price lookup failed, quantity set to 0", Toast.LENGTH_LONG).show();
             } else {
-                finalQuantity = inputValue / values.get(values.size() - 1);
+                finalQuantity = inputValue / values[values.length - 1];
             }
         } else {
             finalQuantity = inputValue;
@@ -258,7 +258,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             editingSecurity.setSymbol(selectedSecurity.getSymbol());
             editingSecurity.setAlias(selectedSecurity.getAlias());
             
-            // Using unified setter
+            // Using direct setter
             editingSecurity.setHistory(selectedSecurity.getValuesOverTime(), selectedSecurity.getEpochDays());
 
             editingSecurity.setQuantity(finalQuantity);

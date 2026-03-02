@@ -1,5 +1,7 @@
 package com.example.optimizer;
 
+import android.util.Log;
+
 import org.apache.commons.math3.analysis.MultivariateFunction;
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
@@ -24,6 +26,7 @@ import java.util.List;
  * Uses sub-selection of non-fixed securities and mapping vectors for results.
  */
 public class PortfolioOptimizer {
+    private static final String TAG = "PortfolioOptimizer";
 
     private final List<Security> securities;
     
@@ -61,17 +64,17 @@ public class PortfolioOptimizer {
             maxExpVector.setEntry(i, qty);
             minDDVector.setEntry(i, qty);
             
-            List<Double> history = securities.get(i).getValuesOverTime();
-            latestPrices[i] = history.isEmpty() ? 0 : history.get(history.size() - 1);
+            double[] history = securities.get(i).getValuesOverTime();
+            latestPrices[i] = (history == null || history.length == 0) ? 0 : history[history.length - 1];
         }
 
         int lastCommonDay = Integer.MAX_VALUE;
         int firstCommonDayPossible = Integer.MIN_VALUE;
         for (Security s : securities) {
-            List<Integer> days = s.getEpochDays();
-            if (days.isEmpty()) continue;
-            firstCommonDayPossible = Math.max(firstCommonDayPossible, days.get(0));
-            lastCommonDay = Math.min(lastCommonDay, days.get(days.size() - 1));
+            int[] days = s.getEpochDays();
+            if (days == null || days.length == 0) continue;
+            firstCommonDayPossible = Math.max(firstCommonDayPossible, days[0]);
+            lastCommonDay = Math.min(lastCommonDay, days[days.length - 1]);
         }
 
         if (firstCommonDayPossible > lastCommonDay) return null;
@@ -131,18 +134,33 @@ public class PortfolioOptimizer {
     public void calculateOptimizations(int visibleWindow) {
         if (securities == null || securities.isEmpty()) return;
 
+        long start = System.currentTimeMillis();
+
         RealMatrix[] matrixWrapper = new RealMatrix[1];
         int[] mapping = securitiesToMatrix(matrixWrapper, visibleWindow);
         
         if (mapping == null || mapping.length == 0) return;
 
         RealMatrix valueMatrix = matrixWrapper[0];
+        long matrixTime = System.currentTimeMillis() - start;
 
+        long subStart = System.currentTimeMillis();
         double[] gmvWeights = calculateGMVWeights(valueMatrix);
+        long gmvTime = System.currentTimeMillis() - subStart;
+
+        subStart = System.currentTimeMillis();
         double[] maxExpWeights = calculateMaxExpWeights(valueMatrix);
+        long expTime = System.currentTimeMillis() - subStart;
+
+        subStart = System.currentTimeMillis();
         double[] minDDWeights = calculateMinPortfolioDrawdownWeights(valueMatrix);
+        long ddTime = System.currentTimeMillis() - subStart;
 
         mapResultsBack(mapping, gmvWeights, maxExpWeights, minDDWeights);
+        
+        long totalTime = System.currentTimeMillis() - start;
+        Log.d(TAG, String.format("Optimization Stats: Total=%dms, Matrix=%dms, GMV=%dms, Exp=%dms, MinDD=%dms", 
+                totalTime, matrixTime, gmvTime, expTime, ddTime));
     }
 
     private double[] calculateMaxExpWeights(RealMatrix window) {

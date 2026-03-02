@@ -2,10 +2,10 @@ package com.example.optimizer;
 
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import java.io.BufferedReader;
@@ -14,10 +14,9 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
-import java.text.ParseException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -31,6 +30,7 @@ import java.util.concurrent.Executors;
  * Handles security searching and portfolio syncing with currency conversion to EUR.
  */
 public class YahooFinanceService {
+    private static final String TAG = "YahooFinanceService";
     private static final String SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search?q=";
     private static final String CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/";
     
@@ -49,12 +49,13 @@ public class YahooFinanceService {
     public void searchSecurities(String query, String alias, Callback<List<Security>> callback) {
         executor.execute(() -> {
             try {
-                String encodedSearch = URLEncoder.encode(query.trim(), "UTF-8");
+                long start = System.currentTimeMillis();
+                String encodedSearch = URLEncoder.encode(query.trim(), StandardCharsets.UTF_8.name());
                 String searchResponse = makeRequest(SEARCH_URL + encodedSearch);
                 JsonObject searchJson = gson.fromJson(searchResponse, JsonObject.class);
 
                 JsonArray quotes = searchJson.getAsJsonArray("quotes");
-                if (quotes == null || quotes.size() == 0) {
+                if (quotes == null || quotes.isEmpty()) {
                     mainHandler.post(() -> callback.onError("No results found for: " + query));
                     return;
                 }
@@ -78,10 +79,12 @@ public class YahooFinanceService {
                     // Fetch basic chart data to determine data availability (number of entries)
                     fetchDataSync(s, "max");
                     
-                    if (!s.getValuesOverTime().isEmpty()) {
+                    if (s.getNumberOfEntries() > 0) {
                         results.add(s);
                     }
                 }
+
+                Log.d(TAG, "Search for '" + query + "' took " + (System.currentTimeMillis() - start) + "ms");
 
                 if (results.isEmpty()) {
                     mainHandler.post(() -> callback.onError("No valid securities found with chart data."));
@@ -97,22 +100,26 @@ public class YahooFinanceService {
 
     private void fetchDataSync(Security security, String range) {
         try {
+            long start = System.currentTimeMillis();
             String symbol = security.getSymbol();
-            String dataUrl = CHART_URL + URLEncoder.encode(symbol, "UTF-8") + "?range=" + range + "&interval=1mo";
+            String dataUrl = CHART_URL + URLEncoder.encode(symbol, StandardCharsets.UTF_8.name()) + "?range=" + range + "&interval=1mo";
             String dataResponse = makeRequest(dataUrl);
             JsonObject dataJson = gson.fromJson(dataResponse, JsonObject.class);
             populateSecurityData(security, dataJson);
+            Log.d(TAG, "Fetching data for " + symbol + " took " + (System.currentTimeMillis() - start) + "ms");
         } catch (Exception ignored) {}
     }
 
     public void syncPortfolio(Portfolio portfolio, Callback<Void> callback) {
         executor.execute(() -> {
             try {
+                long start = System.currentTimeMillis();
                 List<Security> securities = portfolio.getSecurities();
                 for (Security security : securities) {
                     fetchDataSync(security, "max");
-                    Thread.sleep(200);
+                    Thread.sleep(200); // Small delay to be nice to API
                 }
+                Log.d(TAG, "Full portfolio sync took " + (System.currentTimeMillis() - start) + "ms for " + securities.size() + " items");
                 mainHandler.post(() -> callback.onSuccess(null));
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError("Sync failed: " + e.getMessage()));
@@ -122,6 +129,7 @@ public class YahooFinanceService {
 
     private boolean populateSecurityData(Security security, JsonObject dataJson) {
         try {
+            long start = System.currentTimeMillis();
             if (!dataJson.has("chart") || dataJson.getAsJsonObject("chart").getAsJsonArray("result") == null) return false;
             JsonObject result = dataJson.getAsJsonObject("chart").getAsJsonArray("result").get(0).getAsJsonObject();
             
@@ -137,17 +145,17 @@ public class YahooFinanceService {
             JsonArray values = null;
             if (indicators.has("adjclose")) {
                 JsonArray adjArray = indicators.getAsJsonArray("adjclose");
-                if (adjArray != null && adjArray.size() > 0) {
+                if (adjArray != null && !adjArray.isEmpty()) {
                     values = adjArray.get(0).getAsJsonObject().getAsJsonArray("adjclose");
                 }
             }
-            if ((values == null || values.isJsonNull() || values.size() == 0) && indicators.has("quote")) {
+            if ((values == null || values.isJsonNull() || values.isEmpty()) && indicators.has("quote")) {
                 JsonArray quoteArray = indicators.getAsJsonArray("quote");
-                if (quoteArray != null && quoteArray.size() > 0) {
+                if (quoteArray != null && !quoteArray.isEmpty()) {
                     values = quoteArray.get(0).getAsJsonObject().getAsJsonArray("close");
                 }
             }
-            if (values == null || values.size() == 0) return false;
+            if (values == null || values.isEmpty()) return false;
 
             List<Double> rawPrices = new ArrayList<>();
             List<String> dates = new ArrayList<>();
@@ -165,13 +173,12 @@ public class YahooFinanceService {
 
             List<Double> euroPrices = convertToEuro(rawPrices, dates, currency);
             
-            List<Integer> dailyDays = new ArrayList<>();
-            List<Double> dailyValues = new ArrayList<>();
-            DataConverter.convertAndInterpolate(dates, euroPrices, dailyDays, dailyValues);
+            DataConverter.InterpolationResult resultData = DataConverter.convertAndInterpolate(dates, euroPrices);
             
             // Using unified setter
-            security.setHistory(dailyValues, dailyDays);
+            security.setHistory(resultData.values, resultData.days);
             
+            Log.d(TAG, "Populating data for " + security.getSymbol() + " took " + (System.currentTimeMillis() - start) + "ms");
             return true;
         } catch (Exception e) {
             return false;
@@ -222,6 +229,7 @@ public class YahooFinanceService {
     }
 
     private String makeRequest(String urlString) throws IOException {
+        long start = System.currentTimeMillis();
         HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
         conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
         conn.setConnectTimeout(15000);
@@ -232,10 +240,11 @@ public class YahooFinanceService {
             throw new IOException("Server returned HTTP " + responseCode);
         }
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()))) {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
             StringBuilder result = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) result.append(line);
+            Log.d(TAG, "HTTP Request to " + urlString + " took " + (System.currentTimeMillis() - start) + "ms");
             return result.toString();
         } finally {
             conn.disconnect();

@@ -5,7 +5,6 @@ import android.graphics.Color;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Random;
@@ -13,21 +12,21 @@ import java.util.TimeZone;
 
 /**
  * Represents a financial security (e.g., Stock, ETF) in the portfolio.
- * Stores values and epoch days, ensuring both lists always have equal length.
+ * Stores values and epoch days using primitive arrays for performance.
  */
 public class Security {
     private String name;       // Yahoo Finance Name (Shortname)
     private String alias;      // Original search term or custom name
     private String symbol;     // Yahoo Finance Ticker
-    private List<Double> valuesOverTime;
-    private List<Integer> epochDays;  // Days since 1970-01-01
+    private double[] valuesOverTime;
+    private int[] epochDays;   // Days since 1970-01-01
     private double quantity;
     private int color;
     private boolean isFixed;
 
     public Security() {
-        this.valuesOverTime = new ArrayList<>();
-        this.epochDays = new ArrayList<>();
+        this.valuesOverTime = new double[0];
+        this.epochDays = new int[0];
     }
 
     public Security(String name, String symbol, double quantity) {
@@ -46,11 +45,11 @@ public class Security {
     }
 
     private Calendar getCalendarForIndex(int index) {
-        if (index < 0 || index >= epochDays.size()) return null;
+        if (epochDays == null || index < 0 || index >= epochDays.length) return null;
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         cal.set(1970, 0, 1, 0, 0, 0);
         cal.set(Calendar.MILLISECOND, 0);
-        cal.add(Calendar.DATE, epochDays.get(index));
+        cal.add(Calendar.DATE, epochDays[index]);
         return cal;
     }
 
@@ -89,27 +88,29 @@ public class Security {
     public void setSymbol(String symbol) { this.symbol = symbol; }
     public String getIdentifier() { return symbol; }
 
-    public List<Double> getValuesOverTime() { return valuesOverTime; }
-    public List<Integer> getEpochDays() { return epochDays; }
+    public double[] getValuesOverTime() { return valuesOverTime; }
+    public int[] getEpochDays() { return epochDays; }
 
     /**
      * Unified setter to ensure values and days always have equal length.
+     * Stores primitive arrays directly.
      */
-    public void setHistory(List<Double> values, List<Integer> days) {
-        if (values == null || days == null || values.size() != days.size()) {
-            this.valuesOverTime = new ArrayList<>();
-            this.epochDays = new ArrayList<>();
+    public void setHistory(double[] values, int[] days) {
+        if (values == null || days == null || values.length != days.length) {
+            this.valuesOverTime = new double[0];
+            this.epochDays = new int[0];
         } else {
-            this.valuesOverTime = new ArrayList<>(values);
-            this.epochDays = new ArrayList<>(days);
+            this.valuesOverTime = values;
+            this.epochDays = days;
         }
     }
 
     // Helper to get all dates as a list (used by MarkerView)
     public List<String> getDates() {
         List<String> dates = new ArrayList<>();
+        if (epochDays == null) return dates;
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-        for (int i = 0; i < epochDays.size(); i++) {
+        for (int i = 0; i < epochDays.length; i++) {
             Calendar cal = getCalendarForIndex(i);
             dates.add(cal != null ? sdf.format(cal.getTime()) : "");
         }
@@ -122,7 +123,7 @@ public class Security {
     public int getColor() { return color; }
     public void setColor(int color) { this.color = color; }
 
-    public int getNumberOfEntries() { return valuesOverTime.size(); }
+    public int getNumberOfEntries() { return valuesOverTime != null ? valuesOverTime.length : 0; }
 
     public boolean isFixed() { return isFixed; }
     public void setFixed(boolean fixed) { isFixed = fixed; }
@@ -130,112 +131,31 @@ public class Security {
     /**
      * Returns a vector of values between startDay and endDay (inclusive) by linearly
      * interpolating across numberOfDays steps.
-     *
-     * @param startDay The starting epoch day.
-     * @param endDay The ending epoch day.
-     * @param numberOfDays The number of sample points to generate.
-     * @return A double array of interpolated values.
+     * Delegates calculation to DataConverter for consistency.
      */
     public double[] getValueVector(int startDay, int endDay, int numberOfDays) {
         if (numberOfDays <= 0) return new double[0];
-        double[] vector = new double[numberOfDays];
-        if (valuesOverTime.isEmpty()) return vector;
+        if (valuesOverTime == null || valuesOverTime.length == 0) return new double[numberOfDays];
 
+        double[] targetDates = new double[numberOfDays];
         if (numberOfDays == 1) {
-            vector[0] = getInterpolatedValue(startDay);
-            return vector;
-        }
-
-        double stepSize = (double) (endDay - startDay) / (double)(numberOfDays - 1);
-        int epochIdx = 0;
-
-        for (int i = 0; i < numberOfDays; i++) {
-            double d = startDay + i * stepSize;
-            
-            if (d <= epochDays.get(0)) {
-                vector[i] = valuesOverTime.get(0);
-                continue;
-            }
-            if (d >= epochDays.get(epochDays.size() - 1)) {
-                vector[i] = valuesOverTime.get(valuesOverTime.size() - 1);
-                continue;
-            }
-
-            // Advance epochIdx so that epochDays[epochIdx] <= d < epochDays[epochIdx+1]
-            while (epochIdx + 1 < epochDays.size() && epochDays.get(epochIdx + 1) <= d) {
-                epochIdx++;
-            }
-            
-            double d1 = epochDays.get(epochIdx);
-            double d2 = epochDays.get(epochIdx + 1);
-            double v1 = valuesOverTime.get(epochIdx);
-            double v2 = valuesOverTime.get(epochIdx + 1);
-            
-            if (d1 == d2) {
-                vector[i] = v1;
-            } else {
-                vector[i] = v1 + (v2 - v1) * (d - d1) / (d2 - d1);
+            targetDates[0] = (double) startDay;
+        } else {
+            double stepSize = (double) (endDay - startDay) / (double) (numberOfDays - 1);
+            for (int i = 0; i < numberOfDays; i++) {
+                targetDates[i] = startDay + i * stepSize;
             }
         }
-        return vector;
+
+        return DataConverter.interpolateValuesToDate(epochDays, valuesOverTime, targetDates);
     }
 
     /**
      * Helper to perform linear interpolation for a single double day value.
      */
-    private double getInterpolatedValue(double d) {
-        if (epochDays.isEmpty()) return 0;
-
-        int n = epochDays.size();
-        if (d <= epochDays.get(0)) return valuesOverTime.get(0);
-        if (d >= epochDays.get(n - 1)) return valuesOverTime.get(n - 1);
-
-        int i = Collections.binarySearch(epochDays, (int) Math.floor(d));
-        if (i < 0) {
-            i = -(i + 1) - 1;
-        }
-
-        // Ensure indices are within bounds for interpolation
-        if (i < 0) i = 0;
-        if (i >= n - 1) i = n - 2;
-
-        double d1 = epochDays.get(i);
-        double d2 = epochDays.get(i + 1);
-        double v1 = valuesOverTime.get(i);
-        double v2 = valuesOverTime.get(i + 1);
-
-        if (d1 == d2) return v1;
-        return v1 + (v2 - v1) * (d - d1) / (d2 - d1);
-    }
-
-    /**
-     * Returns a vector of values for each day from startDay to endDay (inclusive).
-     * Missing values are filled using the last known value (forward fill).
-     */
-    public double[] getValueVector(int startDay, int endDay) {
-        int length = endDay - startDay + 1;
-        if (length <= 0) return new double[0];
-        double[] vector = new double[length];
-        if (epochDays.isEmpty()) return vector;
-        
-        int epochIdx = Collections.binarySearch(epochDays, startDay);
-        if (epochIdx < 0) epochIdx = -(epochIdx + 1);
-        
-        double currentVal = 0;
-        if (epochIdx > 0) {
-            currentVal = valuesOverTime.get(epochIdx - 1);
-        } else {
-            currentVal = valuesOverTime.get(0);
-        }
-
-        for (int i = 0; i < length; i++) {
-            int d = startDay + i;
-            while (epochIdx < epochDays.size() && epochDays.get(epochIdx) <= d) {
-                currentVal = valuesOverTime.get(epochIdx);
-                epochIdx++;
-            }
-            vector[i] = currentVal;
-        }
-        return vector;
+    public double getInterpolatedValue(double d) {
+        if (valuesOverTime == null || valuesOverTime.length == 0) return 0;
+        double[] result = DataConverter.interpolateValuesToDate(epochDays, valuesOverTime, new double[]{d});
+        return result.length > 0 ? result[0] : 0;
     }
 }

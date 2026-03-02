@@ -8,6 +8,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class SecurityAdapter extends RecyclerView.Adapter<SecurityAdapter.ViewHolder> {
@@ -40,7 +41,7 @@ public class SecurityAdapter extends RecyclerView.Adapter<SecurityAdapter.ViewHo
         
         holder.tvIdentifier.setText(security.getIdentifier());
         holder.tvEntries.setText("Entries: " + security.getNumberOfEntries());
-        holder.tvValues.setText("Values: " + security.getValuesOverTime().toString());
+        holder.tvValues.setText("Values: " + Arrays.toString(security.getValuesOverTime()));
     }
 
     @Override
