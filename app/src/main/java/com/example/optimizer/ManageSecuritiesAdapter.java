@@ -73,7 +73,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         
         if (isLimiting) {
             holder.tvLimitingMarker.setVisibility(View.VISIBLE);
-            holder.itemView.setBackgroundColor(Color.parseColor("#11FF0000"));
+            holder.itemView.setBackgroundColor(holder.itemView.getContext().getColor(R.color.limitingBadge));
         } else {
             holder.tvLimitingMarker.setVisibility(View.GONE);
             holder.itemView.setBackgroundColor(Color.TRANSPARENT);

@@ -81,10 +81,15 @@ public class PortfolioGraphView extends FrameLayout {
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
         xAxis.setGranularity(1f);
+        xAxis.setTextColor(0xFF5A6478);    // textSecondary
+        xAxis.setTextSize(10f);
         xAxis.setValueFormatter(new DynamicDateFormatter());
 
         YAxis leftAxis = chart.getAxisLeft();
         leftAxis.setDrawGridLines(true);
+        leftAxis.setGridColor(0xFFE2E8F0);  // divider
+        leftAxis.setTextColor(0xFF5A6478);   // textSecondary
+        leftAxis.setTextSize(10f);
         chart.getAxisRight().setEnabled(false);
 
         markerView = new PortfolioMarkerView(context, R.layout.graph_marker);
@@ -93,6 +98,8 @@ public class PortfolioGraphView extends FrameLayout {
         Legend legend = chart.getLegend();
         legend.setEnabled(true);
         legend.setWordWrapEnabled(true);
+        legend.setTextColor(0xFF1A2138);   // textPrimary
+        legend.setTextSize(11f);
         legend.setVerticalAlignment(Legend.LegendVerticalAlignment.BOTTOM);
         legend.setHorizontalAlignment(Legend.LegendHorizontalAlignment.LEFT);
         legend.setOrientation(Legend.LegendOrientation.HORIZONTAL);
@@ -217,9 +224,9 @@ public class PortfolioGraphView extends FrameLayout {
 
             LineDataSet set = new LineDataSet(entries, s.getDisplayName());
             int base = s.getColor();
-            set.setColor(Color.argb(120, Color.red(base), Color.green(base), Color.blue(base)));
+            set.setColor(Color.argb(160, Color.red(base), Color.green(base), Color.blue(base)));
             set.setDrawCircles(false);
-            set.setLineWidth(1.0f);
+            set.setLineWidth(1.5f);
             dataSets.add(set);
         }
 
@@ -244,8 +251,8 @@ public class PortfolioGraphView extends FrameLayout {
         }
 
         LineDataSet totalSet = new LineDataSet(totalEntries, "Portfolio Index");
-        totalSet.setColor(Color.BLACK);
-        totalSet.setLineWidth(3f);
+        totalSet.setColor(0xFF1A2138);  // textPrimary
+        totalSet.setLineWidth(2.5f);
         totalSet.setDrawCircles(false);
         dataSets.add(totalSet);
 

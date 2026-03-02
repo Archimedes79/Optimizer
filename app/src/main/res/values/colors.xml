@@ -2,11 +2,32 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="primaryColor">#3F51B5</color>
-    <color name="primaryLightColor">#757de8</color>
-    <color name="primaryDarkColor">#002984</color>
-    <color name="secondaryColor">#26A69A</color>
-    <color name="backgroundColor">#F8F9FA</color>
+
+    <!-- Primary: deep teal -->
+    <color name="primaryColor">#0D7377</color>
+    <color name="primaryLightColor">#14A3A8</color>
+    <color name="primaryDarkColor">#095B5E</color>
+
+    <!-- Secondary: warm coral accent -->
+    <color name="secondaryColor">#E8625C</color>
+    <color name="secondaryLightColor">#FF8A80</color>
+
+    <!-- Surfaces -->
+    <color name="backgroundColor">#F5F7FA</color>
     <color name="cardBackgroundColor">#FFFFFF</color>
-    <color name="graphBackgroundColor">#EEEEEE</color>
+    <color name="graphBackgroundColor">#FFFFFF</color>
+    <color name="surfaceVariant">#EEF1F6</color>
+
+    <!-- Text -->
+    <color name="textPrimary">#1A2138</color>
+    <color name="textSecondary">#5A6478</color>
+    <color name="textHint">#9CA3AF</color>
+
+    <!-- Misc -->
+    <color name="divider">#E2E8F0</color>
+    <color name="cardStroke">#E2E8F0</color>
+    <color name="deleteRed">#EF4444</color>
+    <color name="fixedBadge">#3B82F6</color>
+    <color name="limitingBadge">#FEF2F2</color>
+    <color name="markerBackground">#1A2138</color>
 </resources>

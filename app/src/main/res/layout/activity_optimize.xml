@@ -6,16 +6,31 @@
     android:background="@color/backgroundColor"
     android:padding="16dp">
 
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/graphCard"
+    <!-- Screen title -->
+    <TextView
+        android:id="@+id/tvTitle"
         android:layout_width="0dp"
-        android:layout_height="320dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="2dp"
-        app:strokeWidth="0dp"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="4dp"
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp"
+        android:text="Optimize"
+        android:textColor="@color/textPrimary"
+        android:textSize="28sp"
+        android:fontFamily="sans-serif-medium"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <!-- Graph card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/graphCard"
+        style="@style/Widget.Optimizer.Card"
+        android:layout_width="0dp"
+        android:layout_height="280dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tvTitle">
 
         <com.example.optimizer.PortfolioGraphView
             android:id="@+id/optimizeGraph"
@@ -26,111 +41,117 @@
 
     </com.google.android.material.card.MaterialCardView>
 
-    <TextView
-        android:id="@+id/tvVarLabel"
-        android:layout_width="wrap_content"
+    <!-- Sliders card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/slidersCard"
+        style="@style/Widget.Optimizer.Card"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
-        android:text="Minimum Variance Allocation: 0%"
-        android:textColor="@color/black"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/graphCard" />
-
-    <SeekBar
-        android:id="@+id/sbReduceVariance"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:max="100"
-        android:progress="0"
-        android:paddingVertical="12dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvVarLabel" />
+        app:layout_constraintTop_toBottomOf="@id/graphCard">
 
-    <TextView
-        android:id="@+id/tvExpLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Maximum Sharpe Ratio Allocation: 0%"
-        android:textColor="@color/black"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/sbReduceVariance" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingVertical="12dp">
 
-    <SeekBar
-        android:id="@+id/sbMaxExpectation"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:max="100"
-        android:progress="0"
-        android:paddingVertical="12dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvExpLabel" />
+            <TextView
+                android:id="@+id/tvVarLabel"
+                style="@style/TextAppearance.Optimizer.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Minimum Variance: 0%" />
 
-    <TextView
-        android:id="@+id/tvMddLabel"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="Minimum Drawdown Allocation: 0%"
-        android:textColor="@color/black"
-        android:textSize="12sp"
-        android:textStyle="bold"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/sbMaxExpectation" />
+            <SeekBar
+                android:id="@+id/sbReduceVariance"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="0"
+                android:paddingVertical="8dp"
+                android:progressTint="@color/primaryColor"
+                android:thumbTint="@color/primaryColor" />
 
-    <SeekBar
-        android:id="@+id/sbMinDrawdown"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:max="100"
-        android:progress="0"
-        android:paddingVertical="12dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvMddLabel" />
+            <TextView
+                android:id="@+id/tvExpLabel"
+                style="@style/TextAppearance.Optimizer.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Max Sharpe Ratio: 0%" />
 
+            <SeekBar
+                android:id="@+id/sbMaxExpectation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="0"
+                android:paddingVertical="8dp"
+                android:progressTint="@color/secondaryColor"
+                android:thumbTint="@color/secondaryColor" />
+
+            <TextView
+                android:id="@+id/tvMddLabel"
+                style="@style/TextAppearance.Optimizer.Label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:text="Min Drawdown: 0%" />
+
+            <SeekBar
+                android:id="@+id/sbMinDrawdown"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:max="100"
+                android:progress="0"
+                android:paddingVertical="8dp"
+                android:progressTint="#F59E0B"
+                android:thumbTint="#F59E0B" />
+
+        </LinearLayout>
+    </com.google.android.material.card.MaterialCardView>
+
+    <!-- Allocation card -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/quantitiesCard"
+        style="@style/Widget.Optimizer.Card"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginTop="12dp"
         android:layout_marginBottom="12dp"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="1dp"
-        app:strokeWidth="0dp"
-        app:cardBackgroundColor="@color/cardBackgroundColor"
         app:layout_constraintBottom_toTopOf="@+id/btnBack"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/sbMinDrawdown">
+        app:layout_constraintTop_toBottomOf="@id/slidersCard">
 
-        <TextView
-            android:id="@+id/tvQuantities"
+        <ScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:padding="12dp"
-            android:scrollbars="vertical"
-            android:text="Required Quantities:"
-            android:textColor="@color/black"
-            android:textSize="12sp" />
+            android:layout_height="match_parent">
 
+            <TextView
+                android:id="@+id/tvQuantities"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="16dp"
+                android:text="Portfolio Allocation:"
+                android:textColor="@color/textPrimary"
+                android:textSize="12sp"
+                android:fontFamily="monospace"
+                android:lineSpacingExtra="4dp" />
+
+        </ScrollView>
     </com.google.android.material.card.MaterialCardView>
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/btnBack"
-        style="@style/Widget.MaterialComponents.Button.UnelevatedButton"
+        style="@style/Widget.Optimizer.Button.Tonal"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="Back to Main"
-        android:textColor="@color/white"
-        app:backgroundTint="@color/secondaryColor"
-        app:cornerRadius="8dp"
+        android:layout_height="48dp"
+        android:text="Back to Portfolio"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />

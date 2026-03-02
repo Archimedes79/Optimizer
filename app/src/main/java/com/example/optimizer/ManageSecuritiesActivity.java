@@ -17,7 +17,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.material.switchmaterial.SwitchMaterial;
+import com.google.android.material.materialswitch.MaterialSwitch;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +30,8 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
     private EditText etCustomName;
     private View viewColorPreview;
     private TextView tvEuroSymbol;
-    private SwitchMaterial swUnit;
-    private SwitchMaterial swFixed;
+    private MaterialSwitch swUnit;
+    private MaterialSwitch swFixed;
     private Button btnAdd;
     private Button btnDone;
     private ProgressBar pbSearching;
@@ -48,10 +48,6 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_manage_securities);
 
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-            getSupportActionBar().setTitle("Manage Portfolio");
-        }
 
         portfolio = Portfolio.getInstance();
         yahooFinanceService = new YahooFinanceService();
