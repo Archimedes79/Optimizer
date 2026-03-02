@@ -17,6 +17,11 @@
 
     <style name="Theme.Optimizer" parent="Base.Theme.Optimizer" />
 
+    <style name="Theme.Optimizer.Main" parent="Base.Theme.Optimizer">
+        <item name="android:statusBarColor">@color/backgroundColor</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
     <!-- Shared button style: pill-shaped, primary tint -->
     <style name="Widget.Optimizer.Button.Primary" parent="Widget.Material3.Button">
         <item name="backgroundTint">@color/primaryColor</item>

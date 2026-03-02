@@ -11,9 +11,13 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.EdgeToEdge;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AlertDialog;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -46,8 +50,14 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_manage_securities);
 
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.manage_main), (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+            return insets;
+        });
 
         portfolio = Portfolio.getInstance();
         yahooFinanceService = new YahooFinanceService();
@@ -267,11 +277,6 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             Toast.makeText(this, "Updated: " + editingSecurity.getDisplayName(), Toast.LENGTH_SHORT).show();
             clearInputs();
         } else {
-            if (portfolio.getSecurities().size() >= 24) {
-                Toast.makeText(this, "Limit reached", Toast.LENGTH_SHORT).show();
-                return;
-            }
-
             selectedSecurity.setQuantity(finalQuantity);
             selectedSecurity.setFixed(isFixed);
             if (portfolio.addSecurity(selectedSecurity)) {
