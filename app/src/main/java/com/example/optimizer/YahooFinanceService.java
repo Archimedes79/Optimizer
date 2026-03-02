@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -98,16 +99,29 @@ public class YahooFinanceService {
         });
     }
 
+    /**
+     * Downloads chart data for a single security from Yahoo Finance.
+     * Uses explicit period1=0 to request the full available history (monthly interval).
+     * The {@code range} parameter is ignored; kept for API compatibility.
+     */
     private void fetchDataSync(Security security, String range) {
         try {
             long start = System.currentTimeMillis();
             String symbol = security.getSymbol();
-            String dataUrl = CHART_URL + URLEncoder.encode(symbol, StandardCharsets.UTF_8.name()) + "?range=" + range + "&interval=1mo";
+            // period1=0 (epoch start) + period2=now guarantees maximum history depth.
+            // "range=max" alone sometimes returns only ~2 years on certain tickers.
+            long nowSecs = System.currentTimeMillis() / 1000L;
+            String dataUrl = CHART_URL
+                    + URLEncoder.encode(symbol, StandardCharsets.UTF_8.name())
+                    + "?period1=0&period2=" + nowSecs + "&interval=1mo";
             String dataResponse = makeRequest(dataUrl);
             JsonObject dataJson = gson.fromJson(dataResponse, JsonObject.class);
             populateSecurityData(security, dataJson);
-            Log.d(TAG, "Fetching data for " + symbol + " took " + (System.currentTimeMillis() - start) + "ms");
-        } catch (Exception ignored) {}
+            Log.d(TAG, "Fetching data for " + symbol + " took "
+                    + (System.currentTimeMillis() - start) + "ms");
+        } catch (Exception e) {
+            Log.w(TAG, "fetchDataSync failed for " + security.getSymbol(), e);
+        }
     }
 
     public void syncPortfolio(Portfolio portfolio, Callback<Void> callback) {
@@ -161,7 +175,9 @@ public class YahooFinanceService {
 
             List<Double> rawPrices = new ArrayList<>();
             List<String> dates = new ArrayList<>();
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+            // Must match DataConverter.dateToDay() which parses in UTC
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
 
             int count = Math.min(timestamps.size(), values.size());
             for (int i = 0; i < count; i++) {
@@ -196,7 +212,10 @@ public class YahooFinanceService {
 
         Map<String, Double> ratesByDate = new HashMap<>();
         try {
-            String rateResponse = makeRequest(CHART_URL + pair + "?range=20y&interval=1mo");
+            // Use explicit period to get full FX history, matching security fetch
+            long nowSecs = System.currentTimeMillis() / 1000L;
+            String rateResponse = makeRequest(CHART_URL + pair
+                    + "?period1=0&period2=" + nowSecs + "&interval=1mo");
             JsonObject rateJson = gson.fromJson(rateResponse, JsonObject.class);
             JsonObject result = rateJson.getAsJsonObject("chart").getAsJsonArray("result").get(0).getAsJsonObject();
             JsonArray timestamps = result.getAsJsonArray("timestamp");
@@ -210,7 +229,9 @@ public class YahooFinanceService {
             }
             
             if (timestamps != null && values != null) {
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+                // Must use same Locale + TZ as populateSecurityData for key matching
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+                sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
                 int count = Math.min(timestamps.size(), values.size());
                 for (int i = 0; i < count; i++) {
                     if (!values.get(i).isJsonNull()) {

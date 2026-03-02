@@ -77,20 +77,27 @@ public class Security {
         return cal;
     }
 
+    /** Creates a UTC SimpleDateFormat – avoids timezone mismatch with the UTC Calendar. */
+    private static SimpleDateFormat utcFormat(String pattern) {
+        SimpleDateFormat sdf = new SimpleDateFormat(pattern, Locale.US);
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return sdf;
+    }
+
     /** e.g. "24" */
     public String getYearString(int index) {
         Calendar c = getCalendarForIndex(index);
-        return c != null ? new SimpleDateFormat("yy", Locale.getDefault()).format(c.getTime()) : "";
+        return c != null ? utcFormat("yy").format(c.getTime()) : "";
     }
     /** e.g. "Jan" */
     public String getMonthString(int index) {
         Calendar c = getCalendarForIndex(index);
-        return c != null ? new SimpleDateFormat("MMM", Locale.getDefault()).format(c.getTime()) : "";
+        return c != null ? utcFormat("MMM").format(c.getTime()) : "";
     }
     /** e.g. "07" */
     public String getDayString(int index) {
         Calendar c = getCalendarForIndex(index);
-        return c != null ? new SimpleDateFormat("dd", Locale.getDefault()).format(c.getTime()) : "";
+        return c != null ? utcFormat("dd").format(c.getTime()) : "";
     }
     /** Day-of-month as int. */
     public int getDayInt(int index) {
@@ -100,7 +107,7 @@ public class Security {
     /** "yyyy-MM-dd" */
     public String getFullDateString(int index) {
         Calendar c = getCalendarForIndex(index);
-        return c != null ? new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(c.getTime()) : "";
+        return c != null ? utcFormat("yyyy-MM-dd").format(c.getTime()) : "";
     }
 
     // ── Basic getters / setters ─────────────────────────────────────────────
@@ -141,7 +148,7 @@ public class Security {
     public List<String> getDates() {
         List<String> dates = new ArrayList<>();
         if (epochDays == null) return dates;
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        SimpleDateFormat sdf = utcFormat("yyyy-MM-dd");
         for (int i = 0; i < epochDays.length; i++) {
             Calendar c = getCalendarForIndex(i);
             dates.add(c != null ? sdf.format(c.getTime()) : "");

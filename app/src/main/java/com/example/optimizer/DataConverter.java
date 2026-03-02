@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -27,9 +28,16 @@ public class DataConverter {
 
     // ── Date helpers ────────────────────────────────────────────────────────
 
-    /** Converts "yyyy-MM-dd" to the number of days since 1970-01-01. */
+    /**
+     * Converts "yyyy-MM-dd" to the number of days since 1970-01-01 (UTC).
+     *
+     * <p>Uses UTC explicitly so that the epoch-day number is independent of the
+     * device's local timezone.  Without this, a CET/CEST device would compute
+     * midnight-local → 23:00/22:00 UTC → wrong epoch day.</p>
+     */
     public static int dateToDay(String dateString) {
-        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
+        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.US);
+        sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
         try {
             Date date = sdf.parse(dateString);
             if (date == null) return -1;
