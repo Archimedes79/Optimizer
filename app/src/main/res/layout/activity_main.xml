@@ -14,8 +14,8 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:paddingHorizontal="20dp"
-        android:paddingTop="24dp"
-        android:paddingBottom="8dp"
+        android:paddingTop="16dp"
+        android:paddingBottom="4dp"
         android:text="Portfolio"
         android:textColor="@color/textPrimary"
         android:textSize="22sp"
@@ -24,14 +24,14 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <!-- Graph card -->
     <com.google.android.material.card.MaterialCardView
         android:id="@+id/graphCard"
         style="@style/Widget.Optimizer.Card"
         android:layout_width="0dp"
-        android:layout_height="0dp"
+        android:layout_height="280dp"
         android:layout_marginHorizontal="16dp"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/buttonContainer"
+        android:layout_marginTop="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTitle">
@@ -52,6 +52,36 @@
 
     </com.google.android.material.card.MaterialCardView>
 
+    <!-- Allocation table card -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/allocationCard"
+        style="@style/Widget.Optimizer.Card"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginHorizontal="16dp"
+        android:layout_marginTop="6dp"
+        android:layout_marginBottom="4dp"
+        app:layout_constraintBottom_toTopOf="@+id/buttonContainer"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/graphCard">
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TableLayout
+                android:id="@+id/allocationTable"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="12dp"
+                android:paddingVertical="6dp"
+                android:stretchColumns="0" />
+
+        </ScrollView>
+
+    </com.google.android.material.card.MaterialCardView>
+
     <LinearLayout
         android:id="@+id/buttonContainer"
         android:layout_width="match_parent"
@@ -59,7 +89,7 @@
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:paddingHorizontal="12dp"
-        android:paddingVertical="16dp"
+        android:paddingVertical="12dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent">
