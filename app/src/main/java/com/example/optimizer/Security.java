@@ -13,7 +13,7 @@ import java.util.TimeZone;
 
 /**
  * Represents a financial security (e.g., Stock, ETF) in the portfolio.
- * Stores only values and epoch days, calculating date components on demand.
+ * Stores values and epoch days, ensuring both lists always have equal length.
  */
 public class Security {
     private String name;       // Yahoo Finance Name (Shortname)
@@ -46,7 +46,7 @@ public class Security {
     }
 
     private Calendar getCalendarForIndex(int index) {
-        if (epochDays == null || index < 0 || index >= epochDays.size()) return null;
+        if (index < 0 || index >= epochDays.size()) return null;
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
         cal.set(1970, 0, 1, 0, 0, 0);
         cal.set(Calendar.MILLISECOND, 0);
@@ -90,20 +90,28 @@ public class Security {
     public String getIdentifier() { return symbol; }
 
     public List<Double> getValuesOverTime() { return valuesOverTime; }
-    public void setValuesOverTime(List<Double> values) { this.valuesOverTime = values; }
-
     public List<Integer> getEpochDays() { return epochDays; }
-    public void setEpochDays(List<Integer> epochDays) { this.epochDays = epochDays; }
+
+    /**
+     * Unified setter to ensure values and days always have equal length.
+     */
+    public void setHistory(List<Double> values, List<Integer> days) {
+        if (values == null || days == null || values.size() != days.size()) {
+            this.valuesOverTime = new ArrayList<>();
+            this.epochDays = new ArrayList<>();
+        } else {
+            this.valuesOverTime = new ArrayList<>(values);
+            this.epochDays = new ArrayList<>(days);
+        }
+    }
 
     // Helper to get all dates as a list (used by MarkerView)
     public List<String> getDates() {
         List<String> dates = new ArrayList<>();
-        if (epochDays != null) {
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
-            for (int i = 0; i < epochDays.size(); i++) {
-                Calendar cal = getCalendarForIndex(i);
-                dates.add(cal != null ? sdf.format(cal.getTime()) : "");
-            }
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault());
+        for (int i = 0; i < epochDays.size(); i++) {
+            Calendar cal = getCalendarForIndex(i);
+            dates.add(cal != null ? sdf.format(cal.getTime()) : "");
         }
         return dates;
     }
@@ -176,7 +184,7 @@ public class Security {
      * Helper to perform linear interpolation for a single double day value.
      */
     private double getInterpolatedValue(double d) {
-        if (epochDays == null || epochDays.isEmpty()) return 0;
+        if (epochDays.isEmpty()) return 0;
 
         int n = epochDays.size();
         if (d <= epochDays.get(0)) return valuesOverTime.get(0);
@@ -204,6 +212,7 @@ public class Security {
         int length = endDay - startDay + 1;
         if (length <= 0) return new double[0];
         double[] vector = new double[length];
+        if (epochDays.isEmpty()) return vector;
         
         int epochIdx = Collections.binarySearch(epochDays, startDay);
         if (epochIdx < 0) epochIdx = -(epochIdx + 1);
@@ -211,7 +220,7 @@ public class Security {
         double currentVal = 0;
         if (epochIdx > 0) {
             currentVal = valuesOverTime.get(epochIdx - 1);
-        } else if (!valuesOverTime.isEmpty()) {
+        } else {
             currentVal = valuesOverTime.get(0);
         }
 

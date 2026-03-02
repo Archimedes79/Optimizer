@@ -257,8 +257,10 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             editingSecurity.setName(selectedSecurity.getName());
             editingSecurity.setSymbol(selectedSecurity.getSymbol());
             editingSecurity.setAlias(selectedSecurity.getAlias());
-            editingSecurity.setValuesOverTime(selectedSecurity.getValuesOverTime());
-            editingSecurity.setEpochDays(selectedSecurity.getEpochDays());
+            
+            // Using unified setter
+            editingSecurity.setHistory(selectedSecurity.getValuesOverTime(), selectedSecurity.getEpochDays());
+
             editingSecurity.setQuantity(finalQuantity);
             editingSecurity.setFixed(isFixed);
             

@@ -2,8 +2,6 @@ package com.example.optimizer;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
@@ -24,10 +22,10 @@ public class DataConverter {
         SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
         try {
             Date date = sdf.parse(dateString);
-            Date startDate = sdf.parse(START_DATE);
-            if (date == null || startDate == null) return -1;
+            if (date == null) return -1;
             
-            long diffInMillies = date.getTime() - startDate.getTime();
+            // Standard Java epoch is 1970-01-01 00:00:00 UTC
+            long diffInMillies = date.getTime();
             return (int) TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
         } catch (ParseException e) {
             e.printStackTrace();
@@ -36,85 +34,50 @@ public class DataConverter {
     }
 
     /**
-     * Converts the number of days since 1970-01-01 back to a date string.
-     */
-    public static String dayToDate(int day) {
-        SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
-        Calendar cal = Calendar.getInstance();
-        try {
-            cal.setTime(sdf.parse(START_DATE));
-            cal.add(Calendar.DATE, day);
-            return sdf.format(cal.getTime());
-        } catch (ParseException e) {
-            return "";
-        }
-    }
-
-    /**
-     * Result container for converted and interpolated data.
-     */
-    public static class ConversionResult {
-        public List<Integer> days;
-        public List<Double> values;
-        public List<String> dates;
-
-        public ConversionResult(List<Integer> days, List<Double> values, List<String> dates) {
-            this.days = days;
-            this.values = values;
-            this.dates = dates;
-        }
-    }
-
-    /**
      * Converts a list of dates and values into a continuous daily list with linear interpolation.
      * Assumes originalDates are sorted chronologically.
+     * Fills the provided output lists directly.
      */
-    public static ConversionResult convertAndInterpolate(List<String> originalDates, List<Double> originalValues) {
-        if (originalDates == null || originalValues == null || originalDates.isEmpty() || originalDates.size() != originalValues.size()) {
-            return new ConversionResult(new ArrayList<>(), new ArrayList<>(), new ArrayList<>());
+    public static void convertAndInterpolate(List<String> originalDates, List<Double> originalValues, 
+                                             List<Integer> outDays, List<Double> outValues) {
+        if (originalDates == null || originalValues == null || originalDates.isEmpty() 
+                || originalDates.size() != originalValues.size() || outDays == null || outValues == null) {
+            return;
         }
 
-        List<Integer> originalDays = new ArrayList<>();
-        for (String date : originalDates) {
-            originalDays.add(dateToDay(date));
+        int[] originalDays = new int[originalDates.size()];
+        for (int i = 0; i < originalDates.size(); i++) {
+            originalDays[i] = dateToDay(originalDates.get(i));
         }
 
-        int startDay = originalDays.get(0);
-        int endDay = originalDays.get(originalDays.size() - 1);
-
-        List<Integer> targetDays = new ArrayList<>();
-        List<Double> interpolatedValues = new ArrayList<>();
-        List<String> targetDates = new ArrayList<>();
+        int startDay = originalDays[0];
+        int endDay = originalDays[originalDays.length - 1];
 
         int originalIdx = 0;
         for (int d = startDay; d <= endDay; d++) {
-            targetDays.add(d);
-            targetDates.add(dayToDate(d));
+            outDays.add(d);
             
             // Advance pointer to the first entry that is >= current day d
-            while (originalIdx < originalDays.size() - 1 && d > originalDays.get(originalIdx)) {
+            while (originalIdx < originalDays.length - 1 && d > originalDays[originalIdx]) {
                 originalIdx++;
             }
 
-            if (d == originalDays.get(originalIdx)) {
+            if (d == originalDays[originalIdx]) {
                 // Exact match found
-                interpolatedValues.add(originalValues.get(originalIdx));
+                outValues.add(originalValues.get(originalIdx));
             } else if (originalIdx > 0) {
                 // Interpolate between originalIdx - 1 and originalIdx
-                int d1 = originalDays.get(originalIdx - 1);
-                int d2 = originalDays.get(originalIdx);
+                int d1 = originalDays[originalIdx - 1];
+                int d2 = originalDays[originalIdx];
                 double v1 = originalValues.get(originalIdx - 1);
                 double v2 = originalValues.get(originalIdx);
 
                 // Linear interpolation formula: y = y1 + (y2 - y1) * (x - x1) / (x2 - x1)
-                double val = v1 + (v2 - v1) * (double)(d - d1) / (d2 - d1);
-                interpolatedValues.add(val);
+                double val = v1 + (v2 - v1) * (double)(d - d1) / (double) (d2 - d1);
+                outValues.add(val);
             } else {
-                // Should not happen if startDay is originalDays.get(0)
-                interpolatedValues.add(originalValues.get(0));
+                outValues.add(originalValues.get(0));
             }
         }
-
-        return new ConversionResult(targetDays, interpolatedValues, targetDates);
     }
 }

@@ -165,11 +165,12 @@ public class YahooFinanceService {
 
             List<Double> euroPrices = convertToEuro(rawPrices, dates, currency);
             
-            // Apply interpolation and fill daily data
-            DataConverter.ConversionResult conversionResult = DataConverter.convertAndInterpolate(dates, euroPrices);
+            List<Integer> dailyDays = new ArrayList<>();
+            List<Double> dailyValues = new ArrayList<>();
+            DataConverter.convertAndInterpolate(dates, euroPrices, dailyDays, dailyValues);
             
-            security.setValuesOverTime(conversionResult.values);
-            security.setEpochDays(conversionResult.days);
+            // Using unified setter
+            security.setHistory(dailyValues, dailyDays);
             
             return true;
         } catch (Exception e) {
