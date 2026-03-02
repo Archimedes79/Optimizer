@@ -138,7 +138,7 @@ public class Security {
             return vector;
         }
 
-        double stepSize = (double) (endDay - startDay) /(double)(numberOfDays - 1);
+        double stepSize = (double) (endDay - startDay) / (double)(numberOfDays - 1);
         int epochIdx = 0;
 
         for (int i = 0; i < numberOfDays; i++) {
