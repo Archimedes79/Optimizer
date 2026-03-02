@@ -55,11 +55,15 @@ public class Security {
 
     // ── Colour ──────────────────────────────────────────────────────────────
 
-    /** Deterministic colour derived from ticker symbol. */
+    /** Deterministic darker colour derived from ticker symbol. Avoids black and very light tones. */
     public static int generateConsistentColor(String seed) {
-        if (seed == null || seed.isEmpty()) return Color.GRAY;
+        if (seed == null || seed.isEmpty()) return Color.DKGRAY;
         Random rng = new Random(seed.hashCode());
-        return Color.rgb(50 + rng.nextInt(150), 50 + rng.nextInt(150), 50 + rng.nextInt(150));
+        // Generate darker, more saturated colors: 100-250 range per channel
+        int r = 100 + rng.nextInt(151);  // 100-250
+        int g = 100 + rng.nextInt(151);
+        int b = 100 + rng.nextInt(151);
+        return Color.rgb(r, g, b);
     }
 
     // ── Date formatting (on demand, for graph axis labels / marker) ─────────

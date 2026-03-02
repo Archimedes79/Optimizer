@@ -13,10 +13,10 @@
         android:layout_height="wrap_content"
         android:paddingHorizontal="4dp"
         android:paddingTop="8dp"
-        android:paddingBottom="12dp"
+        android:paddingBottom="8dp"
         android:text="Optimize"
         android:textColor="@color/textPrimary"
-        android:textSize="28sp"
+        android:textSize="22sp"
         android:fontFamily="sans-serif-medium"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -28,6 +28,7 @@
         style="@style/Widget.Optimizer.Card"
         android:layout_width="0dp"
         android:layout_height="280dp"
+        android:layout_marginTop="4dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/tvTitle">
@@ -47,7 +48,7 @@
         style="@style/Widget.Optimizer.Card"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
+        android:layout_marginTop="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/graphCard">
@@ -57,7 +58,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="16dp"
-            android:paddingVertical="12dp">
+            android:paddingVertical="8dp">
 
             <TextView
                 android:id="@+id/tvVarLabel"
@@ -72,7 +73,7 @@
                 android:layout_height="wrap_content"
                 android:max="100"
                 android:progress="0"
-                android:paddingVertical="8dp"
+                android:paddingVertical="6dp"
                 android:progressTint="@color/primaryColor"
                 android:thumbTint="@color/primaryColor" />
 
@@ -81,7 +82,7 @@
                 style="@style/TextAppearance.Optimizer.Label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:text="Max Sharpe Ratio: 0%" />
 
             <SeekBar
@@ -90,7 +91,7 @@
                 android:layout_height="wrap_content"
                 android:max="100"
                 android:progress="0"
-                android:paddingVertical="8dp"
+                android:paddingVertical="6dp"
                 android:progressTint="@color/secondaryColor"
                 android:thumbTint="@color/secondaryColor" />
 
@@ -99,7 +100,7 @@
                 style="@style/TextAppearance.Optimizer.Label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:text="Min Drawdown: 0%" />
 
             <SeekBar
@@ -108,7 +109,7 @@
                 android:layout_height="wrap_content"
                 android:max="100"
                 android:progress="0"
-                android:paddingVertical="8dp"
+                android:paddingVertical="6dp"
                 android:progressTint="#F59E0B"
                 android:thumbTint="#F59E0B" />
 
