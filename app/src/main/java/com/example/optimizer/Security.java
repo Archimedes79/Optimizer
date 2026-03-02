@@ -195,6 +195,10 @@ public class Security {
             i = -(i + 1) - 1;
         }
 
+        // Ensure indices are within bounds for interpolation
+        if (i < 0) i = 0;
+        if (i >= n - 1) i = n - 2;
+
         double d1 = epochDays.get(i);
         double d2 = epochDays.get(i + 1);
         double v1 = valuesOverTime.get(i);
