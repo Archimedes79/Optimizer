@@ -120,8 +120,84 @@ public class Security {
     public void setFixed(boolean fixed) { isFixed = fixed; }
 
     /**
+     * Returns a vector of values between startDay and endDay (inclusive) by linearly
+     * interpolating across numberOfDays steps.
+     *
+     * @param startDay The starting epoch day.
+     * @param endDay The ending epoch day.
+     * @param numberOfDays The number of sample points to generate.
+     * @return A double array of interpolated values.
+     */
+    public double[] getValueVector(int startDay, int endDay, int numberOfDays) {
+        if (numberOfDays <= 0) return new double[0];
+        double[] vector = new double[numberOfDays];
+        if (valuesOverTime.isEmpty()) return vector;
+
+        if (numberOfDays == 1) {
+            vector[0] = getInterpolatedValue(startDay);
+            return vector;
+        }
+
+        double stepSize = (double) (endDay - startDay) /(double)(numberOfDays - 1);
+        int epochIdx = 0;
+
+        for (int i = 0; i < numberOfDays; i++) {
+            double d = startDay + i * stepSize;
+            
+            if (d <= epochDays.get(0)) {
+                vector[i] = valuesOverTime.get(0);
+                continue;
+            }
+            if (d >= epochDays.get(epochDays.size() - 1)) {
+                vector[i] = valuesOverTime.get(valuesOverTime.size() - 1);
+                continue;
+            }
+
+            // Advance epochIdx so that epochDays[epochIdx] <= d < epochDays[epochIdx+1]
+            while (epochIdx + 1 < epochDays.size() && epochDays.get(epochIdx + 1) <= d) {
+                epochIdx++;
+            }
+            
+            double d1 = epochDays.get(epochIdx);
+            double d2 = epochDays.get(epochIdx + 1);
+            double v1 = valuesOverTime.get(epochIdx);
+            double v2 = valuesOverTime.get(epochIdx + 1);
+            
+            if (d1 == d2) {
+                vector[i] = v1;
+            } else {
+                vector[i] = v1 + (v2 - v1) * (d - d1) / (d2 - d1);
+            }
+        }
+        return vector;
+    }
+
+    /**
+     * Helper to perform linear interpolation for a single double day value.
+     */
+    private double getInterpolatedValue(double d) {
+        if (epochDays == null || epochDays.isEmpty()) return 0;
+
+        int n = epochDays.size();
+        if (d <= epochDays.get(0)) return valuesOverTime.get(0);
+        if (d >= epochDays.get(n - 1)) return valuesOverTime.get(n - 1);
+
+        int i = Collections.binarySearch(epochDays, (int) Math.floor(d));
+        if (i < 0) {
+            i = -(i + 1) - 1;
+        }
+
+        double d1 = epochDays.get(i);
+        double d2 = epochDays.get(i + 1);
+        double v1 = valuesOverTime.get(i);
+        double v2 = valuesOverTime.get(i + 1);
+
+        if (d1 == d2) return v1;
+        return v1 + (v2 - v1) * (d - d1) / (d2 - d1);
+    }
+
+    /**
      * Returns a vector of values for each day from startDay to endDay (inclusive).
-     * Optimizes lookup by finding the start index and scanning forward.
      * Missing values are filled using the last known value (forward fill).
      */
     public double[] getValueVector(int startDay, int endDay) {
@@ -129,13 +205,9 @@ public class Security {
         if (length <= 0) return new double[0];
         double[] vector = new double[length];
         
-        // Find the starting point in the sorted epochDays list
         int epochIdx = Collections.binarySearch(epochDays, startDay);
-        if (epochIdx < 0) {
-            epochIdx = -(epochIdx + 1);
-        }
+        if (epochIdx < 0) epochIdx = -(epochIdx + 1);
         
-        // Determine the initial value (carry over from before startDay or backfill first entry)
         double currentVal = 0;
         if (epochIdx > 0) {
             currentVal = valuesOverTime.get(epochIdx - 1);
@@ -143,10 +215,8 @@ public class Security {
             currentVal = valuesOverTime.get(0);
         }
 
-        // Fill the vector by scanning epochDays sequentially
         for (int i = 0; i < length; i++) {
             int d = startDay + i;
-            // Catch up epochIdx to the current day d
             while (epochIdx < epochDays.size() && epochDays.get(epochIdx) <= d) {
                 currentVal = valuesOverTime.get(epochIdx);
                 epochIdx++;
