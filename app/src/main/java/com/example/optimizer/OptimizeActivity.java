@@ -10,6 +10,14 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.util.List;
 import java.util.Locale;
 
+/**
+ * Optimisation UI: three SeekBars (Variance / Expectation / Drawdown) whose
+ * percentages sum to at most 100%.  The remainder = original portfolio.
+ *
+ * <p>Heavy optimisation ({@link PortfolioOptimizer#calculateOptimizations})
+ * only runs when the zoom level changes.  Slider movements trigger the
+ * cheap {@link PortfolioOptimizer#getBlendedQuantities} linear combination.</p>
+ */
 public class OptimizeActivity extends AppCompatActivity {
 
     private PortfolioGraphView graphView;
@@ -47,22 +55,21 @@ public class OptimizeActivity extends AppCompatActivity {
         tvQuantities = findViewById(R.id.tvQuantities);
         Button btnBack = findViewById(R.id.btnBack);
 
-        // Precalculate initial optimization values
+        // Run the three optimisation strategies once at the current zoom level
         optimizer.calculateOptimizations((int) graphView.getCurrentVisibleCount());
 
+        // Re-optimise only when the visible window (zoom) changes
         graphView.setOnVisibleRangeChangeListener(visibleCount -> {
-            // Only recalculate when the window/zoom is changed
             optimizer.calculateOptimizations((int) visibleCount);
             updateUI();
         });
 
+        // Slider changes only trigger the cheap blending + UI refresh
         SeekBar.OnSeekBarChangeListener listener = new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser) {
-                    adjustSliders(seekBar);
-                }
-                updateUI(); // Slider changes only trigger UI update (fast linear combination)
+                if (fromUser) adjustSliders(seekBar);
+                updateUI();
             }
             @Override public void onStartTrackingTouch(SeekBar seekBar) {}
             @Override public void onStopTrackingTouch(SeekBar seekBar) {}
@@ -77,6 +84,7 @@ public class OptimizeActivity extends AppCompatActivity {
         updateUI();
     }
 
+    /** Ensures the three sliders never exceed 100% by proportionally reducing the other two. */
     private void adjustSliders(SeekBar changedSeekBar) {
         int total = sbReduceVariance.getProgress() + sbMaxExpectation.getProgress() + sbMinDrawdown.getProgress();
         if (total > 100) {
@@ -91,6 +99,7 @@ public class OptimizeActivity extends AppCompatActivity {
         }
     }
 
+    /** Distributes excess proportionally across two sliders. */
     private void reduceOtherSliders(int excess, SeekBar s1, SeekBar s2) {
         int p1 = s1.getProgress();
         int p2 = s2.getProgress();
@@ -104,40 +113,38 @@ public class OptimizeActivity extends AppCompatActivity {
         s2.setProgress(Math.max(0, p2 - red2));
     }
 
+    /** Refreshes labels, allocation text, and the graph with blended quantities. */
     private void updateUI() {
-        // Removed calculateOptimizations from here to make slider movement smooth.
-        // It is now only called in onCreate and onVisibleRangeChanged.
-
         int varP = sbReduceVariance.getProgress();
         int expP = sbMaxExpectation.getProgress();
         int mddP = sbMinDrawdown.getProgress();
 
         tvVarLabel.setText(String.format(Locale.getDefault(), "Minimum Variance Allocation: %d%%", varP));
-        tvExpLabel.setText(String.format(Locale.getDefault(), "Maximum Expectation Allocation: %d%%", expP));
+        tvExpLabel.setText(String.format(Locale.getDefault(), "Maximum Sharpe Ratio Allocation: %d%%", expP));
         tvMddLabel.setText(String.format(Locale.getDefault(), "Minimum Drawdown Allocation: %d%%", mddP));
 
-        // Fast calculation of blended quantities
-        double[] displayQuantities = optimizer.getBlendedQuantities(varP / 100.0, expP / 100.0, mddP / 100.0);
-        double[] latestPrices = optimizer.getLatestPrices();
-        
+        // Cheap linear blend – no re-optimisation needed
+        double[] displayQty = optimizer.getBlendedQuantities(varP / 100.0, expP / 100.0, mddP / 100.0);
+        float[] prices = optimizer.getLatestPrices();
+
         double totalValue = 0;
         for (int i = 0; i < securities.size(); i++) {
-            totalValue += displayQuantities[i] * latestPrices[i];
+            totalValue += displayQty[i] * prices[i];
         }
 
         StringBuilder sb = new StringBuilder("Portfolio Allocation:\n");
         for (int i = 0; i < securities.size(); i++) {
             Security s = securities.get(i);
-            double assetValue = displayQuantities[i] * latestPrices[i];
-            double percentage = (totalValue > 0) ? (assetValue / totalValue) * 100.0 : 0;
-            
-            String fixedTag = s.isFixed() ? " (FIXED)" : "";
-            sb.append(String.format(Locale.getDefault(), "%s%s: %.2f units (%.1f%%)\n", 
-                    s.getDisplayName(), fixedTag, displayQuantities[i], percentage));
+            double assetVal = displayQty[i] * prices[i];
+            double pct = (totalValue > 0) ? (assetVal / totalValue) * 100.0 : 0;
+
+            String tag = s.isFixed() ? " (FIXED)" : "";
+            sb.append(String.format(Locale.getDefault(), "%s%s: %.2f units (%.1f%%)\n",
+                    s.getDisplayName(), tag, displayQty[i], pct));
         }
 
         tvQuantities.setText(sb.toString());
-        graphView.setSecuritiesWithQuantities(securities, displayQuantities);
+        graphView.setSecuritiesWithQuantities(securities, displayQty);
     }
 
     @Override

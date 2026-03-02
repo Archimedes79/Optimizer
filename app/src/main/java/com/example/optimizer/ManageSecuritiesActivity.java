@@ -113,7 +113,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             
             try {
                 double val = Double.parseDouble(currentText);
-                double[] values = editingSecurity.getValuesOverTime();
+                float[] values = editingSecurity.getValuesOverTime();
                 if (values == null || values.length == 0) return;
                 double lastPrice = values[values.length - 1];
                 if (lastPrice <= 0) return;
@@ -242,7 +242,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         if (editingSecurity != null && quantityFieldUnchanged) {
             finalQuantity = initialQuantity;
         } else if (isEuro) {
-            double[] values = selectedSecurity.getValuesOverTime();
+            float[] values = selectedSecurity.getValuesOverTime();
             if (values == null || values.length == 0 || values[values.length - 1] == 0) {
                 finalQuantity = 0;
                 Toast.makeText(this, "Price lookup failed, quantity set to 0", Toast.LENGTH_LONG).show();
@@ -263,7 +263,9 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
 
             editingSecurity.setQuantity(finalQuantity);
             editingSecurity.setFixed(isFixed);
-            
+
+            // History changed – recompute the common date range across all securities
+            portfolio.recalculateCommonRange();
             portfolio.save(this);
             adapter.notifyDataSetChanged();
             Toast.makeText(this, "Updated: " + editingSecurity.getDisplayName(), Toast.LENGTH_SHORT).show();

@@ -4,161 +4,255 @@ import android.util.Log;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Utility class to convert date-based data into day-based data with linear interpolation.
+ * Date conversion and linear interpolation for time-series data.
+ *
+ * <p>Design rules:
+ * <ul>
+ *   <li>All public APIs use primitive arrays (int[], float[]) – no Lists – for speed.</li>
+ *   <li>Source values are {@code float[]} – 7 significant digits is plenty for prices.</li>
+ *   <li>Three target-day flavours: int[] (exact days), float[] (sub-day precision for
+ *       downsampled matrices), and write-into-caller-buffer variants to avoid GC pressure.</li>
+ *   <li>Two-pointer sweep gives O(N + M) for sorted inputs.</li>
+ * </ul>
  */
 public class DataConverter {
     private static final String TAG = "DataConverter";
     private static final String DATE_FORMAT = "yyyy-MM-dd";
 
-    /**
-     * Converts a date string to the number of days since 1970-01-01.
-     */
+    // ── Date helpers ────────────────────────────────────────────────────────
+
+    /** Converts "yyyy-MM-dd" to the number of days since 1970-01-01. */
     public static int dateToDay(String dateString) {
         SimpleDateFormat sdf = new SimpleDateFormat(DATE_FORMAT, Locale.getDefault());
         try {
             Date date = sdf.parse(dateString);
             if (date == null) return -1;
-            
-            // Standard Java epoch is 1970-01-01 00:00:00 UTC
-            long diffInMillies = date.getTime();
-            return (int) TimeUnit.DAYS.convert(diffInMillies, TimeUnit.MILLISECONDS);
+            return (int) TimeUnit.DAYS.convert(date.getTime(), TimeUnit.MILLISECONDS);
         } catch (ParseException e) {
             e.printStackTrace();
             return -1;
         }
     }
 
-    /**
-     * Converts a list of string dates to an integer array of epoch days.
-     */
+    /** Batch-converts a List of date strings to int[] epoch days. */
     public static int[] convertDatesToInt(List<String> dates) {
-        int[] outDays = new int[dates.size()];
-        for (int i = 0; i < dates.size(); i++) {
-            outDays[i] = dateToDay(dates.get(i));
-        }
-        return outDays;
-    }
-
-    /**
-     * Converts a list of string dates to a double array of epoch days.
-     */
-    public static double[] convertDatesToDouble(List<String> dates) {
-        double[] out = new double[dates.size()];
-        for (int i = 0; i < dates.size(); i++) {
-            out[i] = (double) dateToDay(dates.get(i));
+        int[] out = new int[dates.size()];
+        for (int i = 0; i < out.length; i++) {
+            out[i] = dateToDay(dates.get(i));
         }
         return out;
     }
 
+    // ── Core interpolation: int[] targets → float[] ─────────────────────────
+
     /**
-     * Interpolates values for target dates based on original dates and values.
-     * Assumes both originalDays and targetDates are sorted in ascending order.
-     * This is the single source of truth for interpolation logic.
+     * Linearly interpolates {@code srcValues} (sampled at {@code srcDays}) onto
+     * the sorted {@code targetDays} grid.  Returns a <b>new</b> float[].
+     *
+     * <p>Both arrays <b>must</b> be sorted ascending.  Values outside the source
+     * range are clamped to the first / last source value.</p>
+     *
+     * <p>Complexity: O(srcDays.length + targetDays.length) – single pass.</p>
      */
-    public static double[] interpolateValuesToDate(int[] originalDays, double[] originalValues, double[] targetDates) {
-        if (targetDates == null) return new double[0];
-        double[] outValues = new double[targetDates.length];
-        if (originalDays == null || originalValues == null || 
-                originalDays.length == 0 || originalValues.length == 0 || originalDays.length != originalValues.length) {
-            return outValues;
-        }
-
-        int originalIdx = 0;
-        int n = originalDays.length;
-
-        for (int i = 0; i < targetDates.length; i++) {
-            double d = targetDates[i];
-            
-            // Clamp to boundaries
-            if (d <= (double) originalDays[0]) {
-                outValues[i] = originalValues[0];
-                continue;
-            }
-            if (d >= (double) originalDays[n - 1]) {
-                outValues[i] = originalValues[n - 1];
-                continue;
-            }
-
-            // Advance pointer so that originalDays[originalIdx] <= d < originalDays[originalIdx+1]
-            // Efficient for sorted targetDates (O(N + M))
-            while (originalIdx + 1 < n && (double) originalDays[originalIdx + 1] <= d) {
-                originalIdx++;
-            }
-
-            double d1 = (double) originalDays[originalIdx];
-            double d2 = (double) originalDays[originalIdx + 1];
-            double v1 = originalValues[originalIdx];
-            double v2 = originalValues[originalIdx + 1];
-
-            if (d1 == d2) {
-                outValues[i] = v1;
-            } else {
-                // Linear interpolation formula: y = y1 + (y2 - y1) * (x - x1) / (x2 - x1)
-                outValues[i] = v1 + (v2 - v1) * (d - d1) / (d2 - d1);
-            }
-        }
-        return outValues;
+    public static float[] interpolate(int[] srcDays, float[] srcValues, int[] targetDays) {
+        if (targetDays == null) return new float[0];
+        float[] out = new float[targetDays.length];
+        interpolateInto(srcDays, srcValues, targetDays, out);
+        return out;
     }
 
+    /**
+     * Same as {@link #interpolate} but writes into the caller-provided {@code out}
+     * buffer instead of allocating.  {@code out.length} must equal {@code targetDays.length}.
+     */
+    public static void interpolateInto(int[] srcDays, float[] srcValues,
+                                        int[] targetDays, float[] out) {
+        final int tLen = targetDays.length;
+        if (srcDays == null || srcValues == null
+                || srcDays.length == 0 || srcDays.length != srcValues.length) {
+            for (int i = 0; i < tLen; i++) out[i] = 0f;
+            return;
+        }
+
+        final int sLen = srcDays.length;
+        final int firstDay = srcDays[0];
+        final int lastDay  = srcDays[sLen - 1];
+
+        // leading clamp
+        int t = 0;
+        while (t < tLen && targetDays[t] <= firstDay) {
+            out[t++] = srcValues[0];
+        }
+
+        // main two-pointer sweep
+        int s = 0;
+        while (t < tLen && targetDays[t] < lastDay) {
+            final int td = targetDays[t];
+            while (s + 1 < sLen && srcDays[s + 1] <= td) s++;
+
+            final int   d1 = srcDays[s];
+            final int   d2 = srcDays[s + 1];
+            final float v1 = srcValues[s];
+            final float v2 = srcValues[s + 1];
+
+            out[t++] = (d1 == d2) ? v1
+                    : v1 + (v2 - v1) * ((float)(td - d1) / (float)(d2 - d1));
+        }
+
+        // trailing clamp
+        final float lastVal = srcValues[sLen - 1];
+        while (t < tLen) {
+            out[t++] = lastVal;
+        }
+    }
+
+    // ── Interpolation: int[] targets → int[] (for resampling day arrays) ────
+
+    /**
+     * Same algorithm as {@link #interpolate} but outputs {@code int[]}
+     * (values rounded to nearest integer).
+     */
+    public static int[] interpolateToInt(int[] srcDays, float[] srcValues, int[] targetDays) {
+        if (targetDays == null) return new int[0];
+        final int tLen = targetDays.length;
+        int[] out = new int[tLen];
+        if (srcDays == null || srcValues == null
+                || srcDays.length == 0 || srcDays.length != srcValues.length) {
+            return out;
+        }
+
+        final int sLen = srcDays.length;
+        final int firstDay = srcDays[0];
+        final int lastDay  = srcDays[sLen - 1];
+
+        int t = 0;
+        while (t < tLen && targetDays[t] <= firstDay) {
+            out[t++] = Math.round(srcValues[0]);
+        }
+
+        int s = 0;
+        while (t < tLen && targetDays[t] < lastDay) {
+            final int td = targetDays[t];
+            while (s + 1 < sLen && srcDays[s + 1] <= td) s++;
+
+            final int   d1 = srcDays[s];
+            final int   d2 = srcDays[s + 1];
+            final float v1 = srcValues[s];
+            final float v2 = srcValues[s + 1];
+
+            out[t++] = (d1 == d2) ? Math.round(v1)
+                    : Math.round(v1 + (v2 - v1) * ((float)(td - d1) / (float)(d2 - d1)));
+        }
+
+        final float lastVal = srcValues[sLen - 1];
+        while (t < tLen) {
+            out[t++] = Math.round(lastVal);
+        }
+        return out;
+    }
+
+    // ── Interpolation: float[] targets → float[] (sub-day precision) ────────
+
+    /**
+     * Interpolates onto a <b>float[]</b> target grid (fractional days).
+     * Useful for building smaller downsampled matrices where target positions
+     * don't land on exact integer days.
+     *
+     * <p>Writes into the caller-provided {@code out} buffer to avoid allocation.</p>
+     *
+     * @param srcDays    original epoch-day samples (int[], sorted asc)
+     * @param srcValues  values at each srcDay (same length)
+     * @param targetDays fractional target days (float[], sorted asc)
+     * @param out        output buffer, same length as targetDays
+     */
+    public static void interpolateFloatDays(int[] srcDays, float[] srcValues,
+                                            float[] targetDays, float[] out) {
+        final int tLen = targetDays.length;
+        if (srcDays == null || srcValues == null
+                || srcDays.length == 0 || srcDays.length != srcValues.length) {
+            for (int i = 0; i < tLen; i++) out[i] = 0f;
+            return;
+        }
+
+        final int sLen = srcDays.length;
+        final float firstDay = (float) srcDays[0];
+        final float lastDay  = (float) srcDays[sLen - 1];
+
+        int t = 0;
+        while (t < tLen && targetDays[t] <= firstDay) {
+            out[t++] = srcValues[0];
+        }
+
+        int s = 0;
+        while (t < tLen && targetDays[t] < lastDay) {
+            final float td = targetDays[t];
+            while (s + 1 < sLen && (float) srcDays[s + 1] <= td) s++;
+
+            final float d1 = (float) srcDays[s];
+            final float d2 = (float) srcDays[s + 1];
+            final float v1 = srcValues[s];
+            final float v2 = srcValues[s + 1];
+
+            out[t++] = (d1 == d2) ? v1 : v1 + (v2 - v1) * ((td - d1) / (d2 - d1));
+        }
+
+        final float lastVal = srcValues[sLen - 1];
+        while (t < tLen) {
+            out[t++] = lastVal;
+        }
+    }
+
+    // ── High-level: sparse API data → dense daily arrays ────────────────────
+
+    /** Result bundle for {@link #convertAndInterpolate}. */
     public static class InterpolationResult {
-        public final int[] days;
-        public final double[] values;
-        public InterpolationResult(int[] days, double[] values) {
-            this.days = days;
+        public final int[]   days;
+        public final float[] values;
+        public InterpolationResult(int[] days, float[] values) {
+            this.days   = days;
             this.values = values;
         }
     }
 
     /**
-     * Converts a list of dates and values into a continuous daily list with linear interpolation.
-     * Returns a 2-element Object array containing int[] epochDays and double[] values.
+     * Converts sparse date+price lists (e.g. monthly from Yahoo) into a dense
+     * daily time-series via linear interpolation.
+     *
+     * <p>This is the only place where {@code List<String>} / {@code List<Double>}
+     * enter the system – they are converted to arrays once.</p>
      */
-    public static InterpolationResult convertAndInterpolate(List<String> originalDates, List<Double> originalValues) {
+    public static InterpolationResult convertAndInterpolate(List<String> originalDates,
+                                                            List<Double> originalValues) {
         long start = System.currentTimeMillis();
-        if (originalDates == null || originalValues == null || originalDates.isEmpty() 
+        if (originalDates == null || originalValues == null || originalDates.isEmpty()
                 || originalDates.size() != originalValues.size()) {
-            return new InterpolationResult(new int[0], new double[0]);
+            return new InterpolationResult(new int[0], new float[0]);
         }
 
-        int[] originalDaysArr = convertDatesToInt(originalDates);
-        double[] originalValuesArr = new double[originalValues.size()];
-        for (int i = 0; i < originalValues.size(); i++) originalValuesArr[i] = originalValues.get(i);
+        int[] srcDays = convertDatesToInt(originalDates);
+        float[] srcVals = new float[originalValues.size()];
+        for (int i = 0; i < srcVals.length; i++) {
+            srcVals[i] = originalValues.get(i).floatValue();
+        }
 
-        int startDay = originalDaysArr[0];
-        int endDay = originalDaysArr[originalDaysArr.length - 1];
+        int startDay = srcDays[0];
+        int endDay   = srcDays[srcDays.length - 1];
+        int length   = endDay - startDay + 1;
 
-        int length = endDay - startDay + 1;
-        int[] outDays = new int[length];
-        double[] targetDates = new double[length];
+        int[] targetDays = new int[length];
         for (int i = 0; i < length; i++) {
-            int d = startDay + i;
-            outDays[i] = d;
-            targetDates[i] = (double) d;
+            targetDays[i] = startDay + i;
         }
 
-        double[] outValues = interpolateValuesToDate(originalDaysArr, originalValuesArr, targetDates);
-        Log.d(TAG, "Interpolation took " + (System.currentTimeMillis() - start) + "ms for " + length + " days");
-        return new InterpolationResult(outDays, outValues);
-    }
+        float[] outValues = interpolate(srcDays, srcVals, targetDays);
 
-    public static List<Double> doubleArrayToList(double[] array) {
-        if (array == null) return new ArrayList<>();
-        List<Double> list = new ArrayList<>(array.length);
-        for (double d : array) list.add(d);
-        return list;
-    }
-
-    public static List<Integer> intArrayToList(int[] array) {
-        if (array == null) return new ArrayList<>();
-        List<Integer> list = new ArrayList<>(array.length);
-        for (int i : array) list.add(i);
-        return list;
+        Log.d(TAG, "Interpolation: " + (System.currentTimeMillis() - start) + "ms, " + length + " days");
+        return new InterpolationResult(targetDays, outValues);
     }
 }

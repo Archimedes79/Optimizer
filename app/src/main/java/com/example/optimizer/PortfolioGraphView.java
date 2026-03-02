@@ -24,6 +24,13 @@ import com.github.mikephil.charting.interfaces.datasets.ILineDataSet;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Custom chart widget that shows normalised security curves + a portfolio index.
+ *
+ * <p>Zoom is controlled by horizontal drag (right = zoom out, left = zoom in).
+ * Uses the common-range indices from {@link Security#getStartIndex()} /
+ * {@link Security#getEndIndex()} to guarantee all securities are aligned.</p>
+ */
 public class PortfolioGraphView extends FrameLayout {
 
     private LineChart chart;
@@ -33,6 +40,7 @@ public class PortfolioGraphView extends FrameLayout {
     private OnVisibleRangeChangeListener visibleRangeChangeListener;
     private List<Security> currentSecurities;
 
+    /** Callback fired when the user changes the zoom level. */
     public interface OnVisibleRangeChangeListener {
         void onVisibleRangeChanged(float visibleCount);
     }
@@ -62,12 +70,12 @@ public class PortfolioGraphView extends FrameLayout {
 
         chart.getDescription().setEnabled(false);
         chart.setTouchEnabled(true);
-        chart.setDragEnabled(false); // Using custom zoom logic
-        chart.setScaleEnabled(false); // Using custom zoom logic
+        chart.setDragEnabled(false);
+        chart.setScaleEnabled(false);
         chart.setPinchZoom(false);
         chart.setDoubleTapToZoomEnabled(false);
         chart.setDrawGridBackground(false);
-        chart.setAutoScaleMinMaxEnabled(true); // Y-axis scales to visible data
+        chart.setAutoScaleMinMaxEnabled(true);
 
         XAxis xAxis = chart.getXAxis();
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
@@ -90,7 +98,7 @@ public class PortfolioGraphView extends FrameLayout {
         legend.setOrientation(Legend.LegendOrientation.HORIZONTAL);
         legend.setDrawInside(false);
 
-        // Custom Zoom/Drag Logic
+        // Horizontal-drag zoom
         chart.setOnTouchListener(new OnTouchListener() {
             private float startX;
             private float startVisibleCount;
@@ -101,22 +109,15 @@ public class PortfolioGraphView extends FrameLayout {
                     case MotionEvent.ACTION_DOWN:
                         startX = event.getX();
                         startVisibleCount = currentVisibleCount;
-                        chart.onTouchEvent(event); // Still allow chart to handle markers
+                        chart.onTouchEvent(event);
                         return true;
                     case MotionEvent.ACTION_MOVE:
                         float dx = event.getX() - startX;
-                        // Sensitivity: Dragging across the full width represents the full data range
                         float sensitivity = (float) currentMaxEntries / chart.getWidth();
-                        
-                        // Shift Right (dx > 0) -> Zoom Out (Increase visible count)
-                        // Shift Left (dx < 0) -> Zoom In (Decrease visible count)
                         currentVisibleCount = startVisibleCount + dx * sensitivity;
-                        
-                        // Bounds: Min 5 points to Max available points
                         if (currentVisibleCount < 5) currentVisibleCount = 5;
                         if (currentVisibleCount > currentMaxEntries) currentVisibleCount = currentMaxEntries;
-                        
-                        applyZoom(true); // Notify listeners when changed by user touch
+                        applyZoom(true);
                         chart.onTouchEvent(event);
                         return true;
                     case MotionEvent.ACTION_UP:
@@ -130,20 +131,19 @@ public class PortfolioGraphView extends FrameLayout {
         });
     }
 
+    /** Applies the current zoom level and optionally notifies listeners. */
     private void applyZoom(boolean notifyListener) {
         if (chart.getData() == null) return;
-        
-        // Force the window to always end at the most recent date (currentMaxEntries - 1)
         chart.setVisibleXRangeMaximum(currentVisibleCount);
         chart.setVisibleXRangeMinimum(currentVisibleCount);
         chart.moveViewToX(currentMaxEntries - currentVisibleCount);
         chart.invalidate();
-
         if (notifyListener && visibleRangeChangeListener != null) {
             visibleRangeChangeListener.onVisibleRangeChanged(currentVisibleCount);
         }
     }
 
+    /** Convenience: displays securities with their own quantities. */
     public void setSecurities(List<Security> securities) {
         if (securities == null) return;
         double[] quantities = new double[securities.size()];
@@ -153,6 +153,13 @@ public class PortfolioGraphView extends FrameLayout {
         setSecuritiesWithQuantities(securities, quantities);
     }
 
+    /**
+     * Main entry: builds individual + portfolio-index line data sets.
+     *
+     * <p>Uses the common-range length ({@link Security#getCommonRangeLength()})
+     * to align all securities and reads directly from the float[] arrays
+     * using startIndex/endIndex.</p>
+     */
     public void setSecuritiesWithQuantities(List<Security> securities, double[] quantities) {
         this.currentSecurities = securities;
         if (securities == null || securities.isEmpty() || quantities == null || quantities.length != securities.size()) {
@@ -160,77 +167,79 @@ public class PortfolioGraphView extends FrameLayout {
             return;
         }
 
-        int minEntries = Integer.MAX_VALUE;
+        // Use the common range that Portfolio has already computed
+        int commonLen = securities.get(0).getCommonRangeLength();
         for (Security s : securities) {
-            minEntries = Math.min(minEntries, s.getNumberOfEntries());
+            commonLen = Math.min(commonLen, s.getCommonRangeLength());
         }
-        
-        if (minEntries < 2) {
+        if (commonLen < 2) {
             chart.clear();
             return;
         }
 
-        int previousMaxEntries = this.currentMaxEntries;
-        this.currentMaxEntries = minEntries;
-        
-        // Maintain current zoom percentage if data range changed
-        if (previousMaxEntries != minEntries) {
-            float zoomRatio = currentVisibleCount / previousMaxEntries;
-            currentVisibleCount = minEntries * zoomRatio;
+        int previousMax = this.currentMaxEntries;
+        this.currentMaxEntries = commonLen;
+
+        // maintain zoom ratio when data range changes
+        if (previousMax != commonLen) {
+            float ratio = currentVisibleCount / previousMax;
+            currentVisibleCount = commonLen * ratio;
         }
-        
-        if (currentVisibleCount > minEntries) currentVisibleCount = minEntries;
+        if (currentVisibleCount > commonLen) currentVisibleCount = commonLen;
         if (currentVisibleCount < 5) currentVisibleCount = 5;
 
         if (markerView != null) {
             Security first = securities.get(0);
-            markerView.setDateSource(first.getDates(), first.getNumberOfEntries() - minEntries);
+            markerView.setDateSource(first.getDates(), first.getNumberOfEntries() - commonLen);
         }
 
-        float lastTotalValue = 0;
+        // --- last total value (for normalisation of portfolio index) ---
+        float lastTotal = 0f;
         for (int i = 0; i < securities.size(); i++) {
-            double[] values = securities.get(i).getValuesOverTime();
-            if (values != null && values.length > 0) {
-                lastTotalValue += (float) (values[values.length - 1] * quantities[i]);
+            float[] vals = securities.get(i).getValuesOverTime();
+            if (vals != null && vals.length > 0) {
+                lastTotal += vals[vals.length - 1] * (float) quantities[i];
             }
         }
 
         List<ILineDataSet> dataSets = new ArrayList<>();
 
+        // --- per-security lines (normalised to 100 via getNormalizedValues) ---
         for (int i = 0; i < securities.size(); i++) {
             Security s = securities.get(i);
-            double[] values = s.getValuesOverTime();
-            if (values == null || values.length == 0) continue;
-            
-            int startIdx = values.length - minEntries;
-            double lastValue = values[values.length - 1];
-            
-            List<Entry> entries = new ArrayList<>();
-            for (int j = 0; j < minEntries; j++) {
-                float normalizedValue = (float) ((values[startIdx + j] / lastValue) * 100.0);
-                entries.add(new Entry(j, normalizedValue));
+            float[] norm = s.getNormalizedValues();
+            if (norm.length == 0) continue;
+
+            List<Entry> entries = new ArrayList<>(norm.length);
+            for (int j = 0; j < norm.length; j++) {
+                entries.add(new Entry(j, norm[j]));
             }
-            
+
             LineDataSet set = new LineDataSet(entries, s.getDisplayName());
-            int baseColor = s.getColor();
-            int alphaColor = Color.argb(120, Color.red(baseColor), Color.green(baseColor), Color.blue(baseColor));
-            set.setColor(alphaColor);
+            int base = s.getColor();
+            set.setColor(Color.argb(120, Color.red(base), Color.green(base), Color.blue(base)));
             set.setDrawCircles(false);
             set.setLineWidth(1.0f);
             dataSets.add(set);
         }
 
-        List<Entry> totalEntries = new ArrayList<>();
-        if (lastTotalValue > 0) {
-            for (int j = 0; j < minEntries; j++) {
-                float sum = 0;
+        // --- portfolio index line (weighted sum, normalised to 100) ---
+        List<Entry> totalEntries = new ArrayList<>(commonLen);
+        if (lastTotal > 0f) {
+            float invLastTotal = 100.0f / lastTotal;
+            for (int j = 0; j < commonLen; j++) {
+                float sum = 0f;
                 for (int i = 0; i < securities.size(); i++) {
-                    double[] values = securities.get(i).getValuesOverTime();
-                    if (values != null && values.length >= minEntries) {
-                        sum += (float) (values[values.length - minEntries + j] * quantities[i]);
+                    Security s = securities.get(i);
+                    float[] vals = s.getValuesOverTime();
+                    if (vals == null) continue;
+                    int si = s.getEndIndex() - commonLen + 1;
+                    if (si < 0) si = 0;
+                    if (si + j < vals.length) {
+                        sum += vals[si + j] * (float) quantities[i];
                     }
                 }
-                totalEntries.add(new Entry(j, (sum / lastTotalValue) * 100.0f));
+                totalEntries.add(new Entry(j, sum * invLastTotal));
             }
         }
 
@@ -241,39 +250,36 @@ public class PortfolioGraphView extends FrameLayout {
         dataSets.add(totalSet);
 
         chart.setData(new LineData(dataSets));
-        
+
         XAxis xAxis = chart.getXAxis();
         xAxis.setAxisMinimum(0);
-        xAxis.setAxisMaximum(minEntries - 1);
-        
-        applyZoom(false); // Don't notify listeners during data updates to avoid infinite recursion
+        xAxis.setAxisMaximum(commonLen - 1);
+
+        applyZoom(false); // don't notify during data load
     }
 
+    /**
+     * Dynamic X-axis formatter – adjusts granularity based on zoom level.
+     * Uses Security's on-demand date helpers instead of building a List every call.
+     */
     private class DynamicDateFormatter extends ValueFormatter {
         @Override
         public String getFormattedValue(float value) {
             int index = (int) value;
-            
-            if (currentSecurities != null && !currentSecurities.isEmpty()) {
-                Security first = currentSecurities.get(0);
-                int offset = first.getNumberOfEntries() - currentMaxEntries;
-                int dateIndex = offset + index;
-                
-                if (dateIndex >= 0 && dateIndex < first.getDates().size()) {
-                    // Logic to adjust formatting based on zoom level (visible range)
-                    if (currentVisibleCount < 12) {
-                        // High Zoom: Show Day and Month
-                        return first.getDayString(dateIndex) + " " + first.getMonthString(dateIndex);
-                    } else if (currentVisibleCount < 48) {
-                        // Medium Zoom: Show Month and Year
-                        return first.getMonthString(dateIndex) + " '" + first.getYearString(dateIndex);
-                    } else {
-                        // Low Zoom / Wide Range: Show only Year
-                        return "'" + first.getYearString(dateIndex);
-                    }
-                }
+            if (currentSecurities == null || currentSecurities.isEmpty()) return "";
+
+            Security first = currentSecurities.get(0);
+            int offset = first.getNumberOfEntries() - currentMaxEntries;
+            int dateIndex = offset + index;
+            if (dateIndex < 0 || dateIndex >= first.getNumberOfEntries()) return "";
+
+            if (currentVisibleCount < 12) {
+                return first.getDayString(dateIndex) + " " + first.getMonthString(dateIndex);
+            } else if (currentVisibleCount < 48) {
+                return first.getMonthString(dateIndex) + " '" + first.getYearString(dateIndex);
+            } else {
+                return "'" + first.getYearString(dateIndex);
             }
-            return "";
         }
     }
 }

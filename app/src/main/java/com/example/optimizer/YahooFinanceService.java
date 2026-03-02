@@ -119,6 +119,8 @@ public class YahooFinanceService {
                     fetchDataSync(security, "max");
                     Thread.sleep(200); // Small delay to be nice to API
                 }
+                // Recalculate common date range after all data is refreshed
+                portfolio.recalculateCommonRange();
                 Log.d(TAG, "Full portfolio sync took " + (System.currentTimeMillis() - start) + "ms for " + securities.size() + " items");
                 mainHandler.post(() -> callback.onSuccess(null));
             } catch (Exception e) {
