@@ -22,6 +22,7 @@ public class OptimizeActivity extends AppCompatActivity {
     private TextView tvQuantities;
     private List<Security> securities;
     private PortfolioOptimizer optimizer;
+    private boolean optimizationsCalculated = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,7 +48,15 @@ public class OptimizeActivity extends AppCompatActivity {
         tvQuantities = findViewById(R.id.tvQuantities);
         Button btnBack = findViewById(R.id.btnBack);
 
+        // Calculate optimizations once at the start
+        // We use the initial visible count from the graph view as the window
+        float initialVisibleCount = graphView.getCurrentVisibleCount();
+        optimizer.calculateOptimizations((int) initialVisibleCount);
+        optimizationsCalculated = true;
+
         graphView.setOnVisibleRangeChangeListener(visibleCount -> {
+            // When the user zooms/drags the graph, we RE-CALCULATE the optimizations
+            // to match the new visible historical window.
             optimizer.calculateOptimizations((int) visibleCount);
             updateUI();
         });
@@ -101,9 +110,7 @@ public class OptimizeActivity extends AppCompatActivity {
     }
 
     private void updateUI() {
-        if (graphView != null) {
-            optimizer.calculateOptimizations((int) graphView.getCurrentVisibleCount());
-        }
+        if (!optimizationsCalculated) return;
 
         int varP = sbReduceVariance.getProgress();
         int expP = sbMaxExpectation.getProgress();
@@ -113,6 +120,7 @@ public class OptimizeActivity extends AppCompatActivity {
         tvExpLabel.setText(String.format(Locale.getDefault(), "Maximum Expectation Allocation: %d%%", expP));
         tvMddLabel.setText(String.format(Locale.getDefault(), "Minimum Drawdown Allocation: %d%%", mddP));
 
+        // Use the precalculated/updated vectors from the optimizer to get the blended quantities
         double[] displayQuantities = optimizer.getBlendedQuantities(varP / 100.0, expP / 100.0, mddP / 100.0);
         double[] latestPrices = optimizer.getLatestPrices();
         

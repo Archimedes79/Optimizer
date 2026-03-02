@@ -14,8 +14,10 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLEncoder;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -162,8 +164,13 @@ public class YahooFinanceService {
             if (rawPrices.isEmpty()) return false;
 
             List<Double> euroPrices = convertToEuro(rawPrices, dates, currency);
-            security.setValuesOverTime(euroPrices);
-            security.setDates(dates);
+            
+            // Apply interpolation and fill daily data
+            DataConverter.ConversionResult conversionResult = DataConverter.convertAndInterpolate(dates, euroPrices);
+            
+            security.setValuesOverTime(conversionResult.values);
+            security.setEpochDays(conversionResult.days);
+            
             return true;
         } catch (Exception e) {
             return false;

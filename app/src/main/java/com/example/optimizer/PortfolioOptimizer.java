@@ -1,6 +1,7 @@
 package com.example.optimizer;
 
 import org.apache.commons.math3.analysis.MultivariateFunction;
+import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.ArrayRealVector;
 import org.apache.commons.math3.linear.DecompositionSolver;
 import org.apache.commons.math3.linear.LUDecomposition;
@@ -15,159 +16,133 @@ import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.BOBYQAOptimizer;
 import org.apache.commons.math3.stat.correlation.Covariance;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Handles the calculation of optimized portfolio allocations based on different strategies.
- * Non-fixed securities are optimized while fixed securities remain at their current quantity.
+ * Uses a value matrix (Securities x Days) and quantity vectors for efficient processing.
  */
 public class PortfolioOptimizer {
 
     private final List<Security> securities;
-    private double[] currentQuantities;
-    private double[] minVarQuantities;
-    private double[] maxExpQuantities;
-    private double[] minDrawdownQuantities;
+    private RealMatrix valueMatrix; // Rows: Securities, Cols: Days
+    private RealVector quantityVector; // Current quantities
+    
+    // Target quantity vectors for the four strategies
+    private RealVector currentVector;
+    private RealVector minVarVector;
+    private RealVector maxExpVector;
+    private RealVector minDDVector;
+
     private double[] latestPrices;
-    private boolean[] isFixed;
 
     public PortfolioOptimizer(List<Security> securities) {
         this.securities = securities;
         int n = (securities != null) ? securities.size() : 0;
-        this.currentQuantities = new double[n];
-        this.minVarQuantities = new double[n];
-        this.maxExpQuantities = new double[n];
-        this.minDrawdownQuantities = new double[n];
+        this.currentVector = new ArrayRealVector(n);
+        this.minVarVector = new ArrayRealVector(n);
+        this.maxExpVector = new ArrayRealVector(n);
+        this.minDDVector = new ArrayRealVector(n);
         this.latestPrices = new double[n];
-        this.isFixed = new boolean[n];
     }
 
-    /**
-     * Re-calculates the target quantities for each optimization strategy.
-     */
     public void calculateOptimizations(int visibleWindow) {
         if (securities == null || securities.isEmpty()) return;
 
         int n = securities.size();
-        List<Integer> variableIndices = new ArrayList<>();
-        double variableTotalValue = 0;
+        quantityVector = new ArrayRealVector(n);
+        latestPrices = new double[n];
 
-        // 1. Identify variable vs fixed assets and calculate baseline variable value
-        for (int i = 0; i < n; i++) {
-            Security s = securities.get(i);
-            currentQuantities[i] = s.getQuantity();
-            isFixed[i] = s.isFixed();
+        // 1. Find the common date range
+        int firstCommonDay = Integer.MIN_VALUE;
+        int lastCommonDay = Integer.MAX_VALUE;
+
+        for (Security s : securities) {
+            List<Integer> days = s.getEpochDays();
+            if (days.isEmpty()) continue;
+            firstCommonDay = Math.max(firstCommonDay, days.get(0));
+            lastCommonDay = Math.min(lastCommonDay, days.get(days.size() - 1));
+        }
+
+        if (firstCommonDay > lastCommonDay) return;
+        int numDays = lastCommonDay - firstCommonDay + 1;
+        if (numDays < 2) return;
+
+        // 2. Fill value matrix (Securities x Days) using Security utility function
+        valueMatrix = new Array2DRowRealMatrix(n, numDays);
+        for (int j = 0; j < n; j++) {
+            Security s = securities.get(j);
+            quantityVector.setEntry(j, s.getQuantity());
             
-            List<Double> allValues = s.getValuesOverTime();
-            if (allValues.isEmpty()) {
-                latestPrices[i] = 0;
-            } else {
-                latestPrices[i] = allValues.get(allValues.size() - 1);
-            }
-
-            if (!isFixed[i]) {
-                variableIndices.add(i);
-                variableTotalValue += currentQuantities[i] * latestPrices[i];
-            }
+            double[] rowValues = s.getValueVector(firstCommonDay, lastCommonDay);
+            valueMatrix.setRow(j, rowValues);
+            
+            latestPrices[j] = rowValues[numDays - 1];
         }
 
-        // 2. Optimization on variable subset
-        int numVar = variableIndices.size();
-        if (numVar == 0) {
-            // Fallback if no variable assets
-            for (int i = 0; i < n; i++) {
-                minVarQuantities[i] = maxExpQuantities[i] = minDrawdownQuantities[i] = currentQuantities[i];
-            }
-            return;
+        // 3. Extract sub-window for optimization
+        int windowSize = Math.min(visibleWindow, numDays);
+        int windowStart = numDays - windowSize;
+        RealMatrix windowMatrix = valueMatrix.getSubMatrix(0, n - 1, windowStart, numDays - 1);
+
+        // 4. Calculate target weights using the window matrix (Securities x windowSize)
+        double[] gmvWeights = calculateGMVWeights(windowMatrix);
+        double[] maxExpWeights = calculateMaxExpWeights(windowMatrix);
+        double[] minDDWeights = calculateMinPortfolioDrawdownWeights(windowMatrix);
+
+        // 5. Convert weights to quantity vectors
+        double currentTotalValue = 0;
+        for (int j = 0; j < n; j++) {
+            currentTotalValue += quantityVector.getEntry(j) * latestPrices[j];
         }
+        double scalingValue = (currentTotalValue > 0) ? currentTotalValue : 1000.0;
 
-        // Prepare return data and price data for optimization
-        List<double[]> variableReturns = new ArrayList<>();
-        List<List<Double>> variableWindowValues = new ArrayList<>();
-        double[] variableExpectations = new double[numVar];
+        currentVector = quantityVector.copy();
+        minVarVector = new ArrayRealVector(n);
+        maxExpVector = new ArrayRealVector(n);
+        minDDVector = new ArrayRealVector(n);
 
-        for (int j = 0; j < numVar; j++) {
-            int originalIdx = variableIndices.get(j);
-            Security s = securities.get(originalIdx);
-            List<Double> allValues = s.getValuesOverTime();
-            int startIdx = Math.max(0, allValues.size() - visibleWindow);
-            List<Double> values = allValues.subList(startIdx, allValues.size());
-            variableWindowValues.add(values);
-
-            if (values.size() > 1) {
-                variableExpectations[j] = (values.get(values.size() - 1) / values.get(0)) - 1.0;
-                double[] periodicReturns = new double[values.size() - 1];
-                for (int k = 1; k < values.size(); k++) {
-                    periodicReturns[k - 1] = (values.get(k) - values.get(k - 1)) / values.get(k - 1);
-                }
-                variableReturns.add(periodicReturns);
-            } else {
-                variableExpectations[j] = -1.0;
-                variableReturns.add(new double[0]);
-            }
-        }
-
-        // Calculate Weights for strategies
-        double[] gmvWeights = calculateGMVWeights(variableReturns);
-        double[] maxExpWeights = calculateMaxExpWeights(variableExpectations);
-        double[] minDDWeights = calculateMinPortfolioDrawdownWeights(variableWindowValues);
-
-        // 3. Map weights back to full target quantity arrays
-        // We scale the variable portion to preserve its current total value (or use 1000 if empty)
-        double scalingValue = (variableTotalValue > 0) ? variableTotalValue : 1000.0;
-
-        for (int i = 0; i < n; i++) {
-            if (isFixed[i]) {
-                // Fixed assets always keep their original quantity
-                minVarQuantities[i] = maxExpQuantities[i] = minDrawdownQuantities[i] = currentQuantities[i];
-            } else {
-                int varIdx = variableIndices.indexOf(i);
-                if (latestPrices[i] > 0) {
-                    minVarQuantities[i] = (scalingValue * gmvWeights[varIdx]) / latestPrices[i];
-                    maxExpQuantities[i] = (scalingValue * maxExpWeights[varIdx]) / latestPrices[i];
-                    minDrawdownQuantities[i] = (scalingValue * minDDWeights[varIdx]) / latestPrices[i];
-                } else {
-                    minVarQuantities[i] = maxExpQuantities[i] = minDrawdownQuantities[i] = 0;
-                }
+        for (int j = 0; j < n; j++) {
+            if (latestPrices[j] > 0) {
+                minVarVector.setEntry(j, (scalingValue * gmvWeights[j]) / latestPrices[j]);
+                maxExpVector.setEntry(j, (scalingValue * maxExpWeights[j]) / latestPrices[j]);
+                minDDVector.setEntry(j, (scalingValue * minDDWeights[j]) / latestPrices[j]);
             }
         }
     }
 
-    private double[] calculateMaxExpWeights(double[] expectations) {
-        int n = expectations.length;
+    private double[] calculateMaxExpWeights(RealMatrix window) {
+        int n = window.getRowDimension();
+        int m = window.getColumnDimension();
+        double[] expectations = new double[n];
+        for (int i = 0; i < n; i++) {
+            expectations[i] = (window.getEntry(i, m - 1) / window.getEntry(i, 0)) - 1.0;
+        }
+        
         double[] weights = new double[n];
         int bestIdx = 0;
         for (int i = 1; i < n; i++) {
             if (expectations[i] > expectations[bestIdx]) bestIdx = i;
         }
-        if (n > 0) weights[bestIdx] = 1.0;
+        weights[bestIdx] = 1.0;
         return weights;
     }
 
-    private double[] calculateGMVWeights(List<double[]> allReturns) {
-        int n = allReturns.size();
-        if (n == 0) return new double[0];
-
-        int minLen = Integer.MAX_VALUE;
-        for (double[] r : allReturns) {
-            if (r.length > 0) minLen = Math.min(minLen, r.length);
-        }
-
-        if (minLen < 2 || minLen < n) {
-            return fallbackInverseVariance(allReturns);
-        }
-
-        double[][] matrixData = new double[minLen][n];
-        for (int j = 0; j < n; j++) {
-            double[] r = allReturns.get(j);
-            for (int i = 0; i < minLen; i++) {
-                matrixData[i][j] = r[i];
+    private double[] calculateGMVWeights(RealMatrix window) {
+        int n = window.getRowDimension();
+        int m = window.getColumnDimension();
+        
+        // Transpose to get observations as rows for Covariance
+        double[][] returns = new double[m - 1][n];
+        for (int t = 1; t < m; t++) {
+            for (int i = 0; i < n; i++) {
+                double prev = window.getEntry(i, t - 1);
+                returns[t - 1][i] = (prev != 0) ? (window.getEntry(i, t) - prev) / prev : 0;
             }
         }
 
         try {
-            RealMatrix covMatrix = new Covariance(matrixData).getCovarianceMatrix();
+            RealMatrix covMatrix = new Covariance(returns).getCovarianceMatrix();
             double shrinkage = 1e-4;
             for (int i = 0; i < n; i++) {
                 covMatrix.setEntry(i, i, covMatrix.getEntry(i, i) + shrinkage);
@@ -178,9 +153,7 @@ public class PortfolioOptimizer {
             RealVector sigmaInvOnes = solver.solve(ones);
 
             double sumWeights = 0;
-            for (int i = 0; i < n; i++) {
-                sumWeights += sigmaInvOnes.getEntry(i);
-            }
+            for (int i = 0; i < n; i++) sumWeights += sigmaInvOnes.getEntry(i);
 
             double[] weights = new double[n];
             double positiveSum = 0;
@@ -188,72 +161,49 @@ public class PortfolioOptimizer {
                 weights[i] = Math.max(0, sigmaInvOnes.getEntry(i) / sumWeights);
                 positiveSum += weights[i];
             }
-
             if (positiveSum > 0) {
                 for (int i = 0; i < n; i++) weights[i] /= positiveSum;
-            } else {
-                return fallbackInverseVariance(allReturns);
+                return weights;
             }
-            return weights;
+        } catch (Exception ignored) {}
 
-        } catch (Exception e) {
-            return fallbackInverseVariance(allReturns);
-        }
+        double[] fallback = new double[n];
+        for (int i = 0; i < n; i++) fallback[i] = 1.0 / n;
+        return fallback;
     }
 
-    private double[] calculateMinPortfolioDrawdownWeights(final List<List<Double>> windowValues) {
-        final int n = windowValues.size();
-        if (n == 0) return new double[0];
-        if (n == 1) return new double[]{1.0};
+    private double[] calculateMinPortfolioDrawdownWeights(final RealMatrix window) {
+        final int n = window.getRowDimension();
+        final int m = window.getColumnDimension();
 
-        int tempMinLen = Integer.MAX_VALUE;
-        for (List<Double> v : windowValues) {
-            if (!v.isEmpty()) tempMinLen = Math.min(tempMinLen, v.size());
-        }
-        final int minLen = tempMinLen;
-        
-        if (minLen < 2) {
-            double[] fallback = new double[n];
-            for (int i = 0; i < n; i++) fallback[i] = 1.0 / n;
-            return fallback;
-        }
+        MultivariateFunction objective = point -> {
+            double sum = 0;
+            for (double d : point) sum += Math.max(0, d);
+            if (sum == 0) return 1.0;
 
-        MultivariateFunction objective = new MultivariateFunction() {
-            @Override
-            public double value(double[] point) {
-                double sum = 0;
-                for (double d : point) sum += Math.max(0, d);
-                if (sum == 0) return 1.0; 
-                
-                double[] normalized = new double[n];
-                for (int i = 0; i < n; i++) normalized[i] = Math.max(0, point[i]) / sum;
-
-                double maxDD = 0;
-                double peak = 0;
-                for (int t = 0; t < minLen; t++) {
-                    double portfolioValue = 0;
-                    for (int i = 0; i < n; i++) {
-                        portfolioValue += normalized[i] * (windowValues.get(i).get(t) / windowValues.get(i).get(0));
-                    }
-                    if (portfolioValue > peak) peak = portfolioValue;
-                    double dd = (peak > 0) ? (peak - portfolioValue) / peak : 0;
-                    if (dd > maxDD) maxDD = dd;
+            double maxDD = 0;
+            double peak = 0;
+            for (int t = 0; t < m; t++) {
+                double portfolioValue = 0;
+                for (int i = 0; i < n; i++) {
+                    double weight = Math.max(0, point[i]) / sum;
+                    double startVal = window.getEntry(i, 0);
+                    portfolioValue += (startVal != 0) ? weight * (window.getEntry(i, t) / startVal) : 0;
                 }
-                return maxDD;
+                if (portfolioValue > peak) peak = portfolioValue;
+                double dd = (peak > 0) ? (peak - portfolioValue) / peak : 0;
+                if (dd > maxDD) maxDD = dd;
             }
+            return maxDD;
         };
 
         try {
-            int interpolationPoints = 2 * n + 1;
-            BOBYQAOptimizer optimizer = new BOBYQAOptimizer(interpolationPoints);
-            
+            BOBYQAOptimizer optimizer = new BOBYQAOptimizer(2 * n + 1);
             double[] startPoint = new double[n];
-            double[] lowerBounds = new double[n];
-            double[] upperBounds = new double[n];
+            double[] bounds = new double[n];
             for (int i = 0; i < n; i++) {
                 startPoint[i] = 1.0 / n;
-                lowerBounds[i] = 0.0;
-                upperBounds[i] = 1.0;
+                bounds[i] = 1.0;
             }
 
             PointValuePair result = optimizer.optimize(
@@ -261,7 +211,7 @@ public class PortfolioOptimizer {
                 new ObjectiveFunction(objective),
                 GoalType.MINIMIZE,
                 new InitialGuess(startPoint),
-                new SimpleBounds(lowerBounds, upperBounds)
+                new SimpleBounds(new double[n], bounds)
             );
 
             double[] bestWeights = result.getPoint();
@@ -271,55 +221,22 @@ public class PortfolioOptimizer {
                 for (int i = 0; i < n; i++) bestWeights[i] = Math.max(0, bestWeights[i]) / sum;
                 return bestWeights;
             }
-        } catch (Exception e) {
-            // Optimization failed
-        }
-        
+        } catch (Exception ignored) {}
+
         double[] fallback = new double[n];
         for (int i = 0; i < n; i++) fallback[i] = 1.0 / n;
         return fallback;
     }
 
-    private double[] fallbackInverseVariance(List<double[]> allReturns) {
-        int n = allReturns.size();
-        double[] variances = new double[n];
-        double invVarSum = 0;
-        for (int i = 0; i < n; i++) {
-            double[] r = allReturns.get(i);
-            if (r.length > 1) {
-                double mean = 0, var = 0;
-                for (double val : r) mean += val;
-                mean /= r.length;
-                for (double val : r) var += (val - mean) * (val - mean);
-                variances[i] = var / (r.length - 1);
-            } else {
-                variances[i] = 1.0;
-            }
-            if (variances[i] > 0) invVarSum += (1.0 / variances[i]);
-        }
-
-        double[] weights = new double[n];
-        for (int i = 0; i < n; i++) {
-            weights[i] = (variances[i] > 0) ? (1.0 / variances[i]) / invVarSum : (1.0 / n);
-        }
-        return weights;
-    }
-
     public double[] getBlendedQuantities(double varFactor, double expFactor, double mddFactor) {
-        int n = securities.size();
-        double currentFactor = 1.0 - varFactor - expFactor - mddFactor;
-        double[] blended = new double[n];
+        double currentFactor = Math.max(0, 1.0 - varFactor - expFactor - mddFactor);
+        
+        RealVector blended = currentVector.mapMultiply(currentFactor)
+                .add(minVarVector.mapMultiply(varFactor))
+                .add(maxExpVector.mapMultiply(expFactor))
+                .add(minDDVector.mapMultiply(mddFactor));
 
-        for (int i = 0; i < n; i++) {
-            // Note: Since all target arrays (current, minVar, maxExp, minDD) 
-            // contain the fixed quantity for fixed assets, the linear 
-            // combination naturally results in the fixed quantity as well.
-            blended[i] = (currentQuantities[i] * currentFactor) +
-                         (minVarQuantities[i] * varFactor) +
-                         (maxExpQuantities[i] * expFactor) +
-                         (minDrawdownQuantities[i] * mddFactor);
-        }
-        return blended;
+        return blended.toArray();
     }
 
     public double[] getLatestPrices() {
