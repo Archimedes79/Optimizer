@@ -16,6 +16,7 @@ import org.apache.commons.math3.optim.nonlinear.scalar.ObjectiveFunction;
 import org.apache.commons.math3.optim.nonlinear.scalar.noderiv.BOBYQAOptimizer;
 import org.apache.commons.math3.stat.correlation.Covariance;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -25,15 +26,10 @@ import java.util.List;
 public class PortfolioOptimizer {
 
     private final List<Security> securities;
-    private RealMatrix valueMatrix; // Rows: Securities, Cols: Days
-    private RealVector quantityVector; // Current quantities
-    
-    // Target quantity vectors for the four strategies
     private RealVector currentVector;
     private RealVector minVarVector;
     private RealVector maxExpVector;
     private RealVector minDDVector;
-
     private double[] latestPrices;
 
     public PortfolioOptimizer(List<Security> securities) {
@@ -46,17 +42,34 @@ public class PortfolioOptimizer {
         this.latestPrices = new double[n];
     }
 
-    public void calculateOptimizations(int visibleWindow) {
-        if (securities == null || securities.isEmpty()) return;
-
+    /**
+     * Initializes target quantity vectors and prepares the value matrix for non-fixed securities.
+     * @param matrixOut An array to return the resulting RealMatrix.
+     * @return The mapping index vector (array of original security indices).
+     */
+    private int[] securitiesToMatrix(RealMatrix[] matrixOut) {
         int n = securities.size();
-        quantityVector = new ArrayRealVector(n);
-        latestPrices = new double[n];
+        
+        // 1. Initialize quantity vectors with current quantity
+        currentVector = new ArrayRealVector(n);
+        minVarVector = new ArrayRealVector(n);
+        maxExpVector = new ArrayRealVector(n);
+        minDDVector = new ArrayRealVector(n);
+        
+        for (int i = 0; i < n; i++) {
+            double qty = securities.get(i).getQuantity();
+            currentVector.setEntry(i, qty);
+            minVarVector.setEntry(i, qty);
+            maxExpVector.setEntry(i, qty);
+            minDDVector.setEntry(i, qty);
+            
+            List<Double> values = securities.get(i).getValuesOverTime();
+            latestPrices[i] = values.isEmpty() ? 0 : values.get(values.size() - 1);
+        }
 
-        // 1. Find the common date range
+        // 2. Identify start and end date
         int firstCommonDay = Integer.MIN_VALUE;
         int lastCommonDay = Integer.MAX_VALUE;
-
         for (Security s : securities) {
             List<Integer> days = s.getEpochDays();
             if (days.isEmpty()) continue;
@@ -64,49 +77,86 @@ public class PortfolioOptimizer {
             lastCommonDay = Math.min(lastCommonDay, days.get(days.size() - 1));
         }
 
-        if (firstCommonDay > lastCommonDay) return;
-        int numDays = lastCommonDay - firstCommonDay + 1;
-        if (numDays < 2) return;
+        if (firstCommonDay > lastCommonDay) return null;
 
-        // 2. Fill value matrix (Securities x Days) using Security utility function
-        valueMatrix = new Array2DRowRealMatrix(n, numDays);
-        for (int j = 0; j < n; j++) {
-            Security s = securities.get(j);
-            quantityVector.setEntry(j, s.getQuantity());
-            
-            double[] rowValues = s.getValueVector(firstCommonDay, lastCommonDay);
-            valueMatrix.setRow(j, rowValues);
-            
-            latestPrices[j] = rowValues[numDays - 1];
+        // 3. Create mapping index vector for non-fixed securities
+        List<Integer> variableIndices = new ArrayList<>();
+        for (int i = 0; i < n; i++) {
+            if (!securities.get(i).isFixed()) {
+                variableIndices.add(i);
+            }
         }
 
-        // 3. Extract sub-window for optimization
+        int numVar = variableIndices.size();
+        if (numVar == 0) return new int[0];
+
+        int numDays = lastCommonDay - firstCommonDay + 1;
+        RealMatrix matrix = new Array2DRowRealMatrix(numVar, numDays);
+        int[] mapping = new int[numVar];
+
+        // 4. Fill matrix rows and mapping vector
+        for (int i = 0; i < numVar; i++) {
+            int originalIdx = variableIndices.get(i);
+            mapping[i] = originalIdx;
+            matrix.setRow(i, securities.get(originalIdx).getValueVector(firstCommonDay, lastCommonDay));
+        }
+
+        matrixOut[0] = matrix;
+        return mapping;
+    }
+
+    /**
+     * Re-calculates the target quantities for each optimization strategy.
+     */
+    public void calculateOptimizations(int visibleWindow) {
+        RealMatrix[] matrixWrapper = new RealMatrix[1];
+        int[] mapping = securitiesToMatrix(matrixWrapper);
+        
+        if (mapping == null || mapping.length == 0) return;
+
+        RealMatrix variableMatrix = matrixWrapper[0];
+        int numVar = mapping.length;
+        int numDays = variableMatrix.getColumnDimension();
+
+        // 1. Extract sub-window for optimization
         int windowSize = Math.min(visibleWindow, numDays);
         int windowStart = numDays - windowSize;
-        RealMatrix windowMatrix = valueMatrix.getSubMatrix(0, n - 1, windowStart, numDays - 1);
+        RealMatrix windowMatrix = variableMatrix.getSubMatrix(0, numVar - 1, windowStart, numDays - 1);
 
-        // 4. Calculate target weights using the window matrix (Securities x windowSize)
+        // 2. Perform optimizations to get target weights for the variable subset
         double[] gmvWeights = calculateGMVWeights(windowMatrix);
         double[] maxExpWeights = calculateMaxExpWeights(windowMatrix);
         double[] minDDWeights = calculateMinPortfolioDrawdownWeights(windowMatrix);
 
-        // 5. Convert weights to quantity vectors
-        double currentTotalValue = 0;
-        for (int j = 0; j < n; j++) {
-            currentTotalValue += quantityVector.getEntry(j) * latestPrices[j];
+        // 3. Map weights back to full target quantity vectors
+        mapResultsBack(mapping, gmvWeights, maxExpWeights, minDDWeights);
+    }
+
+    /**
+     * Maps optimization results from the variable subset back to the full target quantity vectors.
+     */
+    private void mapResultsBack(int[] mapping, double[] gmvWeights, double[] maxExpWeights, double[] minDDWeights) {
+        int numVar = mapping.length;
+        
+        // Calculate the total value of the variable portion to keep it constant after optimization
+        double variableTotalValue = 0;
+        for (int i = 0; i < numVar; i++) {
+            int originalIdx = mapping[i];
+            variableTotalValue += currentVector.getEntry(originalIdx) * latestPrices[originalIdx];
         }
-        double scalingValue = (currentTotalValue > 0) ? currentTotalValue : 1000.0;
+        double scalingValue = (variableTotalValue > 0) ? variableTotalValue : 1000.0;
 
-        currentVector = quantityVector.copy();
-        minVarVector = new ArrayRealVector(n);
-        maxExpVector = new ArrayRealVector(n);
-        minDDVector = new ArrayRealVector(n);
-
-        for (int j = 0; j < n; j++) {
-            if (latestPrices[j] > 0) {
-                minVarVector.setEntry(j, (scalingValue * gmvWeights[j]) / latestPrices[j]);
-                maxExpVector.setEntry(j, (scalingValue * maxExpWeights[j]) / latestPrices[j]);
-                minDDVector.setEntry(j, (scalingValue * minDDWeights[j]) / latestPrices[j]);
+        for (int i = 0; i < numVar; i++) {
+            int originalIdx = mapping[i];
+            double price = latestPrices[originalIdx];
+            if (price > 0) {
+                minVarVector.setEntry(originalIdx, (scalingValue * gmvWeights[i]) / price);
+                maxExpVector.setEntry(originalIdx, (scalingValue * maxExpWeights[i]) / price);
+                minDDVector.setEntry(originalIdx, (scalingValue * minDDWeights[i]) / price);
+            } else {
+                minVarVector.setEntry(originalIdx, 0);
+                maxExpVector.setEntry(originalIdx, 0);
+                minDDVector.setEntry(originalIdx, 0);
             }
         }
     }
@@ -116,7 +166,8 @@ public class PortfolioOptimizer {
         int m = window.getColumnDimension();
         double[] expectations = new double[n];
         for (int i = 0; i < n; i++) {
-            expectations[i] = (window.getEntry(i, m - 1) / window.getEntry(i, 0)) - 1.0;
+            double start = window.getEntry(i, 0);
+            expectations[i] = (start != 0) ? (window.getEntry(i, m - 1) / start) - 1.0 : -1.0;
         }
         
         double[] weights = new double[n];
@@ -132,7 +183,6 @@ public class PortfolioOptimizer {
         int n = window.getRowDimension();
         int m = window.getColumnDimension();
         
-        // Transpose to get observations as rows for Covariance
         double[][] returns = new double[m - 1][n];
         for (int t = 1; t < m; t++) {
             for (int i = 0; i < n; i++) {
