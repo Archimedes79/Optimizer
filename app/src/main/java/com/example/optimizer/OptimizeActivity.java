@@ -22,8 +22,8 @@ import java.util.Locale;
  * Optimisation UI: three SeekBars (Variance / Sharpe / Drawdown) whose
  * percentages sum to at most 100%.  The remainder = original portfolio.
  *
- * <p>The allocation table shows delta units and delta percentages vs the
- * original portfolio.  Positive deltas are green, negative are red.</p>
+ * <p>The allocation table shows delta units and delta percentages based on
+ * normalized portfolio allocation (current weight - original weight).</p>
  */
 public class OptimizeActivity extends AppCompatActivity {
 
@@ -123,8 +123,7 @@ public class OptimizeActivity extends AppCompatActivity {
 
     /**
      * Refreshes slider labels and the allocation table.
-     * Shows delta units (blended − original) and delta percentage with
-     * green / red colouring.
+     * Shows delta units and delta percentage based on normalized allocation change.
      */
     private void updateUI() {
         int varP    = sbReduceVariance.getProgress();
@@ -136,6 +135,15 @@ public class OptimizeActivity extends AppCompatActivity {
         tvMddLabel.setText(String.format(Locale.getDefault(), "Min Drawdown: %d%%", mddP));
 
         double[] blendedQty = optimizer.getBlendedQuantities(varP / 100.0, sharpeP / 100.0, mddP / 100.0);
+        float[] latestPrices = optimizer.getLatestPrices();
+
+        // Calculate total values for normalization
+        double totalOrigValue = 0;
+        double totalBlendedValue = 0;
+        for (int i = 0; i < securities.size(); i++) {
+            totalOrigValue += securities.get(i).getQuantity() * latestPrices[i];
+            totalBlendedValue += blendedQty[i] * latestPrices[i];
+        }
 
         // Rebuild table
         optimizeTable.removeAllViews();
@@ -149,18 +157,22 @@ public class OptimizeActivity extends AppCompatActivity {
         header.setPadding(0, 0, 0, dpToPx(2));
         header.addView(makeText("Name", hintColor, textSizeSp, Gravity.START, true));
         header.addView(makeText("ΔUnits", hintColor, textSizeSp, Gravity.END, true));
-        header.addView(makeText("ΔPct", hintColor, textSizeSp, Gravity.END, true));
+        header.addView(makeText("ΔAlloc", hintColor, textSizeSp, Gravity.END, true));
         optimizeTable.addView(header);
 
         // --- data rows ---
         for (int i = 0; i < securities.size(); i++) {
             Security s = securities.get(i);
             double origQty = s.getQuantity();
-            double delta = blendedQty[i] - origQty;
-            double deltaPct = (origQty != 0) ? (delta / origQty) * 100.0 : 0.0;
+            double deltaUnits = blendedQty[i] - origQty;
+            
+            // Calculate normalized allocation change
+            double origAlloc = (totalOrigValue > 0) ? (origQty * latestPrices[i]) / totalOrigValue : 0;
+            double blendedAlloc = (totalBlendedValue > 0) ? (blendedQty[i] * latestPrices[i]) / totalBlendedValue : 0;
+            double deltaAllocPct = (blendedAlloc - origAlloc) * 100.0;
 
-            int deltaColor = (Math.abs(delta) < 0.005) ? COLOR_ZERO
-                           : (delta > 0) ? COLOR_POS : COLOR_NEG;
+            int deltaColor = (Math.abs(deltaUnits) < 0.005) ? COLOR_ZERO
+                           : (deltaUnits > 0) ? COLOR_POS : COLOR_NEG;
 
             TableRow row = new TableRow(this);
             row.setPadding(0, dpToPx(1), 0, dpToPx(1));
@@ -170,12 +182,12 @@ public class OptimizeActivity extends AppCompatActivity {
             row.addView(makeText(s.getDisplayName() + tag, textColor, textSizeSp, Gravity.START, false));
 
             // ΔUnits
-            String deltaStr = String.format(Locale.getDefault(), "%+.2f", delta);
+            String deltaStr = String.format(Locale.getDefault(), "%+.2f", deltaUnits);
             row.addView(makeText(deltaStr, deltaColor, textSizeSp, Gravity.END, false));
 
-            // ΔPct
-            String deltaPctStr = String.format(Locale.getDefault(), "%+.1f%%", deltaPct);
-            row.addView(makeText(deltaPctStr, deltaColor, textSizeSp, Gravity.END, false));
+            // ΔAlloc (Normalized allocation change)
+            String deltaAllocStr = String.format(Locale.getDefault(), "%+.1f%%", deltaAllocPct);
+            row.addView(makeText(deltaAllocStr, deltaColor, textSizeSp, Gravity.END, false));
 
             optimizeTable.addView(row);
         }
