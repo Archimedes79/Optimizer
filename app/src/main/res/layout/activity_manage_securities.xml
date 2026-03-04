@@ -1,205 +1,222 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/manage_main"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/backgroundColor"
-    tools:context=".ManageSecuritiesActivity">
+<androidx.constraintlayout.widget.ConstraintLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	xmlns:tools="http://schemas.android.com/tools"
+	android:id="@+id/manage_main"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/backgroundColor"
+	tools:context=".ManageSecuritiesActivity">
 
-    <!-- Screen title -->
-    <TextView
-        android:id="@+id/tvScreenTitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="20dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="4dp"
-        android:text="Manage Assets"
-        android:textColor="@color/textPrimary"
-        android:textSize="20sp"
-        android:fontFamily="sans-serif-medium"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+	<!-- ======================== CAPTION SECTION START ======================== -->
 
-    <!-- Input card wrapping all fields -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/inputCard"
-        style="@style/Widget.Optimizer.Card"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvScreenTitle">
+	<TextView
+		android:id="@+id/tvScreenTitle"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:fontFamily="sans-serif-medium"
+		android:paddingHorizontal="16dp"
+		android:paddingTop="8dp"
+		android:paddingBottom="4dp"
+		android:text="Manage Assets"
+		android:textColor="@color/textPrimary"
+		android:textSize="20sp"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent" />
 
-        <androidx.constraintlayout.widget.ConstraintLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="16dp">
+	<!-- ======================== CAPTION SECTION END ========================== -->
 
-            <!-- Row 1: Ticker | Color | Add -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilIdentifier"
-                style="@style/Widget.Optimizer.TextInput"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:hint="Ticker or ISIN"
-                app:layout_constraintEnd_toStartOf="@+id/viewColorPreview"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintHorizontal_weight="1">
+	<!-- ======================== CONTENT SECTION START ======================== -->
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etIdentifier"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textAllCaps="true"
-                    android:textColor="@color/textPrimary" />
-            </com.google.android.material.textfield.TextInputLayout>
+	<!-- Input card wrapping all fields -->
+	<com.google.android.material.card.MaterialCardView
+		android:id="@+id/inputCard"
+		style="@style/Widget.Optimizer.Card"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginHorizontal="16dp"
+		android:layout_marginTop="4dp"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@id/tvScreenTitle">
 
-            <View
-                android:id="@+id/viewColorPreview"
-                android:layout_width="12dp"
-                android:layout_height="0dp"
-                android:layout_marginHorizontal="8dp"
-                android:background="@android:color/darker_gray"
-                app:layout_constraintBottom_toBottomOf="@+id/tilIdentifier"
-                app:layout_constraintEnd_toStartOf="@+id/btnAddSecurity"
-                app:layout_constraintStart_toEndOf="@id/tilIdentifier"
-                app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
+		<androidx.constraintlayout.widget.ConstraintLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:padding="16dp">
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnAddSecurity"
-                style="@style/Widget.Optimizer.Button.Primary"
-                android:layout_width="wrap_content"
-                android:layout_height="0dp"
-                android:text="Add"
-                app:layout_constraintBottom_toBottomOf="@+id/tilIdentifier"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/viewColorPreview"
-                app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
+			<!-- Row 1: Ticker | Color | Add -->
+			<com.google.android.material.textfield.TextInputLayout
+				android:id="@+id/tilIdentifier"
+				style="@style/Widget.Optimizer.TextInput"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:hint="Ticker or ISIN"
+				app:layout_constraintEnd_toStartOf="@+id/viewColorPreview"
+				app:layout_constraintHorizontal_weight="1"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintTop_toTopOf="parent">
 
-            <!-- Row 2: Quantity | € | Alias -->
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilQuantity"
-                style="@style/Widget.Optimizer.TextInput"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="Qty"
-                app:layout_constraintEnd_toStartOf="@+id/tvEuroSymbol"
-                app:layout_constraintHorizontal_weight="0.6"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@+id/tilIdentifier">
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/etIdentifier"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:textAllCaps="true"
+					android:textColor="@color/textPrimary" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etQuantity"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:inputType="numberDecimal"
-                    android:textColor="@color/textPrimary" />
-            </com.google.android.material.textfield.TextInputLayout>
+			</com.google.android.material.textfield.TextInputLayout>
 
-            <TextView
-                android:id="@+id/tvEuroSymbol"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="4dp"
-                android:text="€"
-                android:textColor="@color/textPrimary"
-                android:textSize="18sp"
-                android:visibility="invisible"
-                app:layout_constraintBottom_toBottomOf="@id/tilQuantity"
-                app:layout_constraintEnd_toStartOf="@id/tilCustomName"
-                app:layout_constraintStart_toEndOf="@id/tilQuantity"
-                app:layout_constraintTop_toTopOf="@id/tilQuantity" />
+			<View
+				android:id="@+id/viewColorPreview"
+				android:layout_width="12dp"
+				android:layout_height="0dp"
+				android:layout_marginHorizontal="8dp"
+				android:background="@android:color/darker_gray"
+				app:layout_constraintBottom_toBottomOf="@+id/tilIdentifier"
+				app:layout_constraintEnd_toStartOf="@+id/btnAddSecurity"
+				app:layout_constraintStart_toEndOf="@id/tilIdentifier"
+				app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
 
-            <com.google.android.material.textfield.TextInputLayout
-                android:id="@+id/tilCustomName"
-                style="@style/Widget.Optimizer.TextInput"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:hint="Alias (Optional)"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintHorizontal_weight="1.4"
-                app:layout_constraintStart_toEndOf="@+id/tvEuroSymbol"
-                app:layout_constraintTop_toBottomOf="@+id/tilIdentifier">
+			<com.google.android.material.button.MaterialButton
+				android:id="@+id/btnAddSecurity"
+				style="@style/Widget.Optimizer.Button.Primary"
+				android:layout_width="wrap_content"
+				android:layout_height="0dp"
+				android:text="Add"
+				app:layout_constraintBottom_toBottomOf="@+id/tilIdentifier"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintStart_toEndOf="@+id/viewColorPreview"
+				app:layout_constraintTop_toTopOf="@+id/tilIdentifier" />
 
-                <com.google.android.material.textfield.TextInputEditText
-                    android:id="@+id/etCustomName"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/textPrimary" />
-            </com.google.android.material.textfield.TextInputLayout>
+			<!-- Row 2: Quantity | € | Alias -->
+			<com.google.android.material.textfield.TextInputLayout
+				android:id="@+id/tilQuantity"
+				style="@style/Widget.Optimizer.TextInput"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="12dp"
+				android:hint="Qty"
+				app:layout_constraintEnd_toStartOf="@+id/tvEuroSymbol"
+				app:layout_constraintHorizontal_weight="0.6"
+				app:layout_constraintStart_toStartOf="parent"
+				app:layout_constraintTop_toBottomOf="@+id/tilIdentifier">
 
-            <!-- Row 3: Switches -->
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/swUnit"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="EUR"
-                android:textColor="@color/textSecondary"
-                android:textSize="13sp"
-                app:layout_constraintEnd_toEndOf="@+id/tilQuantity"
-                app:layout_constraintStart_toStartOf="@+id/tilQuantity"
-                app:layout_constraintTop_toBottomOf="@+id/tilCustomName" />
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/etQuantity"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:inputType="numberDecimal"
+					android:textColor="@color/textPrimary" />
 
-            <com.google.android.material.materialswitch.MaterialSwitch
-                android:id="@+id/swFixed"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:text="Fixed"
-                android:textColor="@color/textSecondary"
-                android:textSize="13sp"
-                app:layout_constraintEnd_toEndOf="@+id/tilCustomName"
-                app:layout_constraintStart_toStartOf="@+id/tilCustomName"
-                app:layout_constraintTop_toBottomOf="@+id/tilCustomName" />
+			</com.google.android.material.textfield.TextInputLayout>
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
-    </com.google.android.material.card.MaterialCardView>
+			<TextView
+				android:id="@+id/tvEuroSymbol"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginHorizontal="4dp"
+				android:text="€"
+				android:textColor="@color/textPrimary"
+				android:textSize="18sp"
+				android:visibility="invisible"
+				app:layout_constraintBottom_toBottomOf="@id/tilQuantity"
+				app:layout_constraintEnd_toStartOf="@id/tilCustomName"
+				app:layout_constraintStart_toEndOf="@id/tilQuantity"
+				app:layout_constraintTop_toTopOf="@id/tilQuantity" />
 
-    <ProgressBar
-        android:id="@+id/pbSearching"
-        style="?android:attr/progressBarStyleHorizontal"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginHorizontal="16dp"
-        android:indeterminate="true"
-        android:visibility="gone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/inputCard" />
+			<com.google.android.material.textfield.TextInputLayout
+				android:id="@+id/tilCustomName"
+				style="@style/Widget.Optimizer.TextInput"
+				android:layout_width="0dp"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="12dp"
+				android:hint="Alias (Optional)"
+				app:layout_constraintEnd_toEndOf="parent"
+				app:layout_constraintHorizontal_weight="1.4"
+				app:layout_constraintStart_toEndOf="@+id/tvEuroSymbol"
+				app:layout_constraintTop_toBottomOf="@+id/tilIdentifier">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/rvManageSecurities"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginHorizontal="12dp"
-        android:clipToPadding="false"
-        android:scrollbars="vertical"
-        android:fadeScrollbars="false"
-        app:layout_constraintBottom_toTopOf="@+id/btnDone"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/pbSearching" />
+				<com.google.android.material.textfield.TextInputEditText
+					android:id="@+id/etCustomName"
+					android:layout_width="match_parent"
+					android:layout_height="wrap_content"
+					android:textColor="@color/textPrimary" />
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnDone"
-        style="@style/Widget.Optimizer.Button.Tonal"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:layout_marginHorizontal="16dp"
-        android:layout_marginBottom="16dp"
-        android:text="Back to Portfolio"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+			</com.google.android.material.textfield.TextInputLayout>
+
+			<!-- Row 3: Switches -->
+			<com.google.android.material.materialswitch.MaterialSwitch
+				android:id="@+id/swUnit"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="8dp"
+				android:text="EUR"
+				android:textColor="@color/textSecondary"
+				android:textSize="13sp"
+				app:layout_constraintEnd_toEndOf="@+id/tilQuantity"
+				app:layout_constraintStart_toStartOf="@+id/tilQuantity"
+				app:layout_constraintTop_toBottomOf="@+id/tilCustomName" />
+
+			<com.google.android.material.materialswitch.MaterialSwitch
+				android:id="@+id/swFixed"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="8dp"
+				android:text="Fixed"
+				android:textColor="@color/textSecondary"
+				android:textSize="13sp"
+				app:layout_constraintEnd_toEndOf="@+id/tilCustomName"
+				app:layout_constraintStart_toStartOf="@+id/tilCustomName"
+				app:layout_constraintTop_toBottomOf="@+id/tilCustomName" />
+
+		</androidx.constraintlayout.widget.ConstraintLayout>
+
+	</com.google.android.material.card.MaterialCardView>
+
+	<ProgressBar
+		android:id="@+id/pbSearching"
+		style="?android:attr/progressBarStyleHorizontal"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginHorizontal="16dp"
+		android:indeterminate="true"
+		android:visibility="gone"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/inputCard" />
+
+	<androidx.recyclerview.widget.RecyclerView
+		android:id="@+id/rvManageSecurities"
+		android:layout_width="0dp"
+		android:layout_height="0dp"
+		android:layout_marginHorizontal="16dp"
+		android:layout_marginTop="4dp"
+		android:clipToPadding="false"
+		android:fadeScrollbars="false"
+		android:scrollbars="vertical"
+		app:layout_constraintBottom_toTopOf="@+id/btnDone"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@+id/pbSearching" />
+
+	<!-- ======================== CONTENT SECTION END ========================== -->
+
+	<!-- ======================== NAVIGATION SECTION START ===================== -->
+
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/btnDone"
+		style="@style/Widget.Optimizer.Button.Tonal"
+		android:layout_width="0dp"
+		android:layout_height="48dp"
+		android:layout_marginHorizontal="16dp"
+		android:layout_marginBottom="8dp"
+		android:text="Back to Portfolio"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent" />
+
+	<!-- ======================== NAVIGATION SECTION END ======================= -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

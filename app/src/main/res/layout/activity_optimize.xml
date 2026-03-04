@@ -1,157 +1,175 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/optimize_main"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@color/backgroundColor"
-    android:padding="16dp">
+<androidx.constraintlayout.widget.ConstraintLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	android:id="@+id/optimize_main"
+	android:layout_width="match_parent"
+	android:layout_height="match_parent"
+	android:background="@color/backgroundColor">
 
-    <!-- Screen title -->
-    <TextView
-        android:id="@+id/tvTitle"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:paddingHorizontal="4dp"
-        android:paddingTop="8dp"
-        android:paddingBottom="8dp"
-        android:text="Optimize"
-        android:textColor="@color/textPrimary"
-        android:textSize="22sp"
-        android:fontFamily="sans-serif-medium"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+	<!-- ======================== CAPTION SECTION START ======================== -->
 
-    <!-- Graph card -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/graphCard"
-        style="@style/Widget.Optimizer.Card"
-        android:layout_width="0dp"
-        android:layout_height="280dp"
-        android:layout_marginTop="4dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvTitle">
+	<TextView
+		android:id="@+id/tvTitle"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:fontFamily="sans-serif-medium"
+		android:paddingHorizontal="16dp"
+		android:paddingTop="8dp"
+		android:paddingBottom="4dp"
+		android:text="Optimize"
+		android:textColor="@color/textPrimary"
+		android:textSize="20sp"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toTopOf="parent" />
 
-        <com.example.optimizer.PortfolioGraphView
-            android:id="@+id/optimizeGraph"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@color/graphBackgroundColor"
-            android:padding="8dp" />
+	<!-- ======================== CAPTION SECTION END ========================== -->
 
-    </com.google.android.material.card.MaterialCardView>
+	<!-- ======================== CONTENT SECTION START ======================== -->
 
-    <!-- Sliders card -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/slidersCard"
-        style="@style/Widget.Optimizer.Card"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/graphCard">
+	<!-- Graph card -->
+	<com.google.android.material.card.MaterialCardView
+		android:id="@+id/graphCard"
+		style="@style/Widget.Optimizer.Card"
+		android:layout_width="0dp"
+		android:layout_height="280dp"
+		android:layout_marginHorizontal="16dp"
+		android:layout_marginTop="4dp"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@id/tvTitle">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="16dp"
-            android:paddingVertical="8dp">
+		<com.example.optimizer.PortfolioGraphView
+			android:id="@+id/optimizeGraph"
+			android:layout_width="match_parent"
+			android:layout_height="match_parent"
+			android:background="@color/graphBackgroundColor"
+			android:padding="8dp" />
 
-            <TextView
-                android:id="@+id/tvVarLabel"
-                style="@style/TextAppearance.Optimizer.Label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Minimum Variance: 0%" />
+	</com.google.android.material.card.MaterialCardView>
 
-            <SeekBar
-                android:id="@+id/sbReduceVariance"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="100"
-                android:progress="0"
-                android:paddingVertical="6dp"
-                android:progressTint="@color/primaryColor"
-                android:thumbTint="@color/primaryColor" />
+	<!-- Sliders card -->
+	<com.google.android.material.card.MaterialCardView
+		android:id="@+id/slidersCard"
+		style="@style/Widget.Optimizer.Card"
+		android:layout_width="0dp"
+		android:layout_height="wrap_content"
+		android:layout_marginHorizontal="16dp"
+		android:layout_marginTop="4dp"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@id/graphCard">
 
-            <TextView
-                android:id="@+id/tvExpLabel"
-                style="@style/TextAppearance.Optimizer.Label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Max Sharpe Ratio: 0%" />
+		<LinearLayout
+			android:layout_width="match_parent"
+			android:layout_height="wrap_content"
+			android:orientation="vertical"
+			android:paddingHorizontal="16dp"
+			android:paddingVertical="8dp">
 
-            <SeekBar
-                android:id="@+id/sbMaxExpectation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="100"
-                android:progress="0"
-                android:paddingVertical="6dp"
-                android:progressTint="@color/secondaryColor"
-                android:thumbTint="@color/secondaryColor" />
+			<TextView
+				android:id="@+id/tvVarLabel"
+				style="@style/TextAppearance.Optimizer.Label"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="Minimum Variance: 0%" />
 
-            <TextView
-                android:id="@+id/tvMddLabel"
-                style="@style/TextAppearance.Optimizer.Label"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Min Drawdown: 0%" />
+			<SeekBar
+				android:id="@+id/sbReduceVariance"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:max="100"
+				android:paddingVertical="6dp"
+				android:progress="0"
+				android:progressTint="@color/primaryColor"
+				android:thumbTint="@color/primaryColor" />
 
-            <SeekBar
-                android:id="@+id/sbMinDrawdown"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:max="100"
-                android:progress="0"
-                android:paddingVertical="6dp"
-                android:progressTint="#F59E0B"
-                android:thumbTint="#F59E0B" />
+			<TextView
+				android:id="@+id/tvExpLabel"
+				style="@style/TextAppearance.Optimizer.Label"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="2dp"
+				android:text="Max Sharpe Ratio: 0%" />
 
-        </LinearLayout>
-    </com.google.android.material.card.MaterialCardView>
+			<SeekBar
+				android:id="@+id/sbMaxExpectation"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:max="100"
+				android:paddingVertical="6dp"
+				android:progress="0"
+				android:progressTint="@color/secondaryColor"
+				android:thumbTint="@color/secondaryColor" />
 
-    <!-- Allocation card -->
-    <com.google.android.material.card.MaterialCardView
-        android:id="@+id/quantitiesCard"
-        style="@style/Widget.Optimizer.Card"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintBottom_toTopOf="@+id/btnBack"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/slidersCard">
+			<TextView
+				android:id="@+id/tvMddLabel"
+				style="@style/TextAppearance.Optimizer.Label"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:layout_marginTop="2dp"
+				android:text="Min Drawdown: 0%" />
 
-        <ScrollView
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
+			<SeekBar
+				android:id="@+id/sbMinDrawdown"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:max="100"
+				android:paddingVertical="6dp"
+				android:progress="0"
+				android:progressTint="#F59E0B"
+				android:thumbTint="#F59E0B" />
 
-            <TableLayout
-                android:id="@+id/optimizeTable"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:stretchColumns="0" />
+		</LinearLayout>
 
-        </ScrollView>
-    </com.google.android.material.card.MaterialCardView>
+	</com.google.android.material.card.MaterialCardView>
 
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btnBack"
-        style="@style/Widget.Optimizer.Button.Tonal"
-        android:layout_width="0dp"
-        android:layout_height="48dp"
-        android:text="Back to Portfolio"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+	<!-- Allocation card -->
+	<com.google.android.material.card.MaterialCardView
+		android:id="@+id/quantitiesCard"
+		style="@style/Widget.Optimizer.Card"
+		android:layout_width="0dp"
+		android:layout_height="0dp"
+		android:layout_marginHorizontal="16dp"
+		android:layout_marginTop="4dp"
+		android:layout_marginBottom="4dp"
+		app:layout_constraintBottom_toTopOf="@+id/btnBack"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent"
+		app:layout_constraintTop_toBottomOf="@id/slidersCard">
+
+		<ScrollView
+			android:layout_width="match_parent"
+			android:layout_height="match_parent">
+
+			<TableLayout
+				android:id="@+id/optimizeTable"
+				android:layout_width="match_parent"
+				android:layout_height="wrap_content"
+				android:padding="8dp"
+				android:stretchColumns="0" />
+
+		</ScrollView>
+
+	</com.google.android.material.card.MaterialCardView>
+
+	<!-- ======================== CONTENT SECTION END ========================== -->
+
+	<!-- ======================== NAVIGATION SECTION START ===================== -->
+
+	<com.google.android.material.button.MaterialButton
+		android:id="@+id/btnBack"
+		style="@style/Widget.Optimizer.Button.Tonal"
+		android:layout_width="0dp"
+		android:layout_height="48dp"
+		android:layout_marginHorizontal="16dp"
+		android:layout_marginBottom="8dp"
+		android:text="Back to Portfolio"
+		app:layout_constraintBottom_toBottomOf="parent"
+		app:layout_constraintEnd_toEndOf="parent"
+		app:layout_constraintStart_toStartOf="parent" />
+
+	<!-- ======================== NAVIGATION SECTION END ======================= -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>
