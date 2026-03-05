@@ -140,6 +140,14 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             } catch (NumberFormatException ignored) {}
         });
 
+        // Toggling 'Fixed' takes effect immediately on the selected security
+        swFixed.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (editingSecurity == null) return;
+            editingSecurity.setFixed(isChecked);
+            portfolio.save(ManageSecuritiesActivity.this);
+            adapter.notifyDataSetChanged();
+        });
+
         etIdentifier.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}

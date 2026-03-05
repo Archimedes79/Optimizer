@@ -102,9 +102,14 @@ public class PortfolioOptimizer {
         // collect non-fixed indices
         List<Integer> varIdx = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            if (!securities.get(i).isFixed()) varIdx.add(i);
+            if (!securities.get(i).isFixed()) {
+                varIdx.add(i);
+            } else {
+                Log.d(TAG, "Fixed (excluded): " + securities.get(i).getDisplayName());
+            }
         }
         int numVar = varIdx.size();
+        Log.d(TAG, "Optimising " + numVar + " of " + n + " securities (rest fixed)");
         if (numVar == 0) return new int[0];
 
         int numPoints = Math.min(MAX_OPTIMIZATION_POINTS, visibleWindow);
@@ -158,6 +163,32 @@ public class PortfolioOptimizer {
                 maxSharpeVector.setEntry(idx, (budget * sharpeW[i]) / price);
                 minDDVector.setEntry(idx,     (budget * ddW[i])     / price);
             }
+        }
+
+        // ── Sanity check: portfolio value must be conserved ─────────────
+        verifyValueConservation("GMV",      minVarVector);
+        verifyValueConservation("MaxSharpe", maxSharpeVector);
+        verifyValueConservation("MinDD",    minDDVector);
+    }
+
+    /**
+     * Checks that the total portfolio value of {@code optimisedQty} equals
+     * the original portfolio value.  Logs an error if the relative deviation
+     * exceeds 0.1%.
+     */
+    private void verifyValueConservation(String label, RealVector optimisedQty) {
+        int n = securities.size();
+        double origValue = 0, optValue = 0;
+        for (int i = 0; i < n; i++) {
+            origValue += initialQuantityVector.getEntry(i) * latestPrices[i];
+            optValue  += optimisedQty.getEntry(i)          * latestPrices[i];
+        }
+        if (origValue <= 0) return;
+        double relError = Math.abs(optValue - origValue) / origValue;
+        if (relError > 0.001) {
+            Log.e(TAG, String.format(
+                    "%s value NOT conserved! original=%.2f optimised=%.2f deviation=%.4f%%",
+                    label, origValue, optValue, relError * 100.0));
         }
     }
 
@@ -373,7 +404,24 @@ public class PortfolioOptimizer {
                 .add(minVarVector.mapMultiply(varF))
                 .add(maxSharpeVector.mapMultiply(sharpeF))
                 .add(minDDVector.mapMultiply(mddF));
-        return blended.toArray();
+
+        // ── Sanity check: blended portfolio value == original ───────────
+        double[] result = blended.toArray();
+        double origValue = 0, blendedValue = 0;
+        for (int i = 0; i < result.length; i++) {
+            origValue    += initialQuantityVector.getEntry(i) * latestPrices[i];
+            blendedValue += result[i]                         * latestPrices[i];
+        }
+        if (origValue > 0) {
+            double relError = Math.abs(blendedValue - origValue) / origValue;
+            if (relError > 0.001) {
+                Log.e(TAG, String.format(
+                        "Blended value NOT conserved! original=%.2f blended=%.2f deviation=%.4f%% (var=%.0f%% sharpe=%.0f%% mdd=%.0f%%)",
+                        origValue, blendedValue, relError * 100.0,
+                        varF * 100, sharpeF * 100, mddF * 100));
+            }
+        }
+        return result;
     }
 
     /** Latest known price per security (float – matches Security data). */

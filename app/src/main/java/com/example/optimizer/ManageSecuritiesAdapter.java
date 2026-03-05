@@ -24,10 +24,10 @@ import java.util.Random;
  * RecyclerView adapter for the Manage Assets list.
  *
  * <p>Each item is rendered as a single {@link TextView} with a
- * {@link SpannableStringBuilder}: the first line uses the same caption style
- * as the screen titles (20 sp, sans-serif-medium, bold, textPrimary) and the
- * remaining lines show ID, quantity and flags in the secondary detail style
- * (11 sp, textSecondary) – matching the allocation tables in the other screens.</p>
+ * {@link SpannableStringBuilder}: all text is 11 sp to match the allocation
+ * tables in the Portfolio and Optimize screens.  The first line (name) is
+ * bold + textPrimary (like table headers); the remaining lines use normal
+ * weight + textSecondary (like table data rows).</p>
  */
 public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuritiesAdapter.ViewHolder> {
 
@@ -122,18 +122,16 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
     /**
      * Builds a single SpannableStringBuilder for each list item.
      *
-     * <p>Line 1 (caption): security display name – same style as screen
-     * captions (20 sp, bold, sans-serif-medium, textPrimary).<br>
-     * Lines 2+: ID, quantity, fixed flag, limiting marker – 11 sp,
-     * textSecondary, matching the allocation tables.</p>
+     * <p>All text uses 11 sp (matching the allocation tables).
+     * Line 1 (name): bold, textPrimary – like table headers.<br>
+     * Lines 2+: normal, textSecondary – like table data rows.</p>
      */
     private CharSequence buildContent(@NonNull ViewHolder holder,
                                       @NonNull Security security,
                                       boolean isLimiting) {
 
         float density = holder.itemView.getResources().getDisplayMetrics().scaledDensity;
-        int captionPx = Math.round(14f * density);   // caption size matching screen titles
-        int detailPx  = Math.round(11f * density);   // detail size matching table text
+        int textPx = Math.round(11f * density);   // 11 sp – same as allocation tables
 
         int colorPrimary   = holder.itemView.getContext().getColor(R.color.textPrimary);
         int colorSecondary = holder.itemView.getContext().getColor(R.color.textSecondary);
@@ -149,9 +147,8 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         detail.append("ID: ").append(security.getSymbol() != null ? security.getSymbol() : "–");
         detail.append('\n');
         detail.append(String.format(Locale.getDefault(), "Qty: %.4f", security.getQuantity()));
-        if (security.isFixed()) {
-            detail.append("  ·  Fixed");
-        }
+        detail.append('\n');
+        detail.append("Fixed: ").append(security.isFixed() ? "yes" : "no");
         if (isLimiting) {
             detail.append("  ·  Limiting");
         }
@@ -164,17 +161,17 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         int detailStart = ssb.length();
         ssb.append(detail);
 
-        // Caption: bold, larger, primary colour
+        // Uniform 11 sp everywhere (matching table text in other screens)
+        ssb.setSpan(new AbsoluteSizeSpan(textPx),
+                0, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+        // Caption: bold, primary colour (like table headers)
         ssb.setSpan(new StyleSpan(Typeface.BOLD),
-                0, captionEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-        ssb.setSpan(new AbsoluteSizeSpan(captionPx),
                 0, captionEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
         ssb.setSpan(new ForegroundColorSpan(colorPrimary),
                 0, captionEnd, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 
-        // Details: normal weight, smaller, secondary colour
-        ssb.setSpan(new AbsoluteSizeSpan(detailPx),
-                detailStart, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        // Details: normal weight, secondary colour (like table data)
         ssb.setSpan(new ForegroundColorSpan(colorSecondary),
                 detailStart, ssb.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 

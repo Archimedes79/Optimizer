@@ -21,9 +21,9 @@
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
 			android:layout_weight="1"
-			android:lineSpacingExtra="2dp"
-			android:paddingHorizontal="12dp"
-			android:paddingVertical="8dp" />
+			android:lineSpacingExtra="1dp"
+			android:paddingHorizontal="8dp"
+			android:paddingVertical="6dp" />
 
 		<ImageButton
 			android:id="@+id/btnRemoveSecurity"
