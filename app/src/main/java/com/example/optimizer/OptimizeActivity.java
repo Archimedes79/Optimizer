@@ -165,7 +165,7 @@ public class OptimizeActivity extends AppCompatActivity {
             Security s = securities.get(i);
             double origQty = s.getQuantity();
             double deltaUnits = blendedQty[i] - origQty;
-            
+
             // Calculate normalized allocation change
             double origAlloc = (totalOrigValue > 0) ? (origQty * latestPrices[i]) / totalOrigValue : 0;
             double blendedAlloc = (totalBlendedValue > 0) ? (blendedQty[i] * latestPrices[i]) / totalBlendedValue : 0;
@@ -177,7 +177,7 @@ public class OptimizeActivity extends AppCompatActivity {
             TableRow row = new TableRow(this);
             row.setPadding(0, dpToPx(1), 0, dpToPx(1));
 
-            // Name (stretches – column 0)
+            // Name (stretches – column 0); ● marks fixed securities
             String tag = s.isFixed() ? " ●" : "";
             row.addView(makeText(s.getDisplayName() + tag, textColor, textSizeSp, Gravity.START, false));
 

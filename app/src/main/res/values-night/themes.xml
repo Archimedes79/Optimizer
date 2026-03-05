@@ -1,5 +1,5 @@
 <resources>
-    <!-- Night theme: mirrors the day theme so the app always uses the light colour scheme. -->
+    <!-- Night theme: mirrors the day theme so the app always uses the light color scheme. -->
     <style name="Base.Theme.Optimizer" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primaryColor</item>
         <item name="colorPrimaryVariant">@color/primaryDarkColor</item>

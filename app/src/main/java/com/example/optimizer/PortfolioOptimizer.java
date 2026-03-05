@@ -29,6 +29,13 @@ import java.util.List;
  *   <li><b>Max Sharpe</b> – Maximum Sharpe Ratio / Tangency Portfolio</li>
  *   <li><b>MinDD</b> – Minimise maximum drawdown (BOBYQA derivative-free)</li>
  * </ol>
+ *
+ * <p><b>Fixed securities</b> ({@link Security#isFixed()}) are excluded from all
+ * three optimisations.  Their quantities stay at the original value in every
+ * optimised vector, so that the budget they occupy (e.g. 4% of the portfolio)
+ * is never redistributed.  Only the remaining non-fixed budget is optimised.
+ * This prevents constant-value or strategic positions from being over-weighted
+ * by variance or drawdown minimisation.</p>
  */
 public class PortfolioOptimizer {
     private static final String TAG = "PortfolioOptimizer";
