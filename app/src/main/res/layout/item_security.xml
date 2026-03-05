@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     style="@style/Widget.Optimizer.Card"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
@@ -20,7 +20,7 @@
             android:textColor="@color/textPrimary"
             android:textSize="16sp"
             android:textStyle="bold"
-            android:text="Security Name" />
+            tools:text="Security Name" />
 
         <TextView
             android:id="@+id/tvAlias"
@@ -28,8 +28,8 @@
             android:layout_height="wrap_content"
             android:textColor="@color/textSecondary"
             android:textSize="13sp"
-            android:text="Alias"
-            android:visibility="gone" />
+            android:visibility="gone"
+            tools:text="Alias" />
 
         <TextView
             android:id="@+id/tvIdentifier"
@@ -37,7 +37,7 @@
             android:layout_height="wrap_content"
             android:textColor="@color/textSecondary"
             android:textSize="12sp"
-            android:text="WKN/ISO" />
+            tools:text="Ticker/ISIN" />
 
         <TextView
             android:id="@+id/tvEntries"
@@ -45,7 +45,7 @@
             android:layout_height="wrap_content"
             android:textColor="@color/textSecondary"
             android:textSize="12sp"
-            android:text="Entries: 0" />
+            tools:text="Entries: 0" />
 
         <TextView
             android:id="@+id/tvValues"
@@ -55,7 +55,7 @@
             android:textSize="11sp"
             android:ellipsize="end"
             android:maxLines="1"
-            android:text="Values: " />
+            tools:text="Values: " />
 
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
