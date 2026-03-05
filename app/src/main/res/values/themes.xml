@@ -65,6 +65,17 @@
         <item name="hintTextColor">@color/primaryColor</item>
     </style>
 
+    <!-- Screen caption (used on every screen title) -->
+    <style name="Widget.Optimizer.Caption" parent="android:Widget.TextView">
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/textPrimary</item>
+        <item name="android:textSize">20sp</item>
+        <item name="android:paddingStart">16dp</item>
+        <item name="android:paddingEnd">16dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">4dp</item>
+    </style>
+
     <!-- Section header text -->
     <style name="TextAppearance.Optimizer.Label" parent="TextAppearance.Material3.LabelLarge">
         <item name="android:textColor">@color/textPrimary</item>

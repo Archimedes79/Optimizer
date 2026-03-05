@@ -4,31 +4,22 @@
 	xmlns:app="http://schemas.android.com/apk/res-auto"
 	android:id="@+id/optimize_main"
 	android:layout_width="match_parent"
-	android:layout_height="match_parent"
-	android:background="@color/backgroundColor">
+	android:layout_height="match_parent">
 
-	<!-- ======================== CAPTION SECTION START ======================== -->
+	<!-- ======================== CAPTION SECTION ============================== -->
 
 	<TextView
 		android:id="@+id/tvTitle"
+		style="@style/Widget.Optimizer.Caption"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
-		android:fontFamily="sans-serif-medium"
-		android:paddingHorizontal="16dp"
-		android:paddingTop="8dp"
-		android:paddingBottom="4dp"
 		android:text="Optimize"
-		android:textColor="@color/textPrimary"
-		android:textSize="20sp"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent" />
 
-	<!-- ======================== CAPTION SECTION END ========================== -->
+	<!-- ======================== CONTENT SECTION ============================== -->
 
-	<!-- ======================== CONTENT SECTION START ======================== -->
-
-	<!-- Graph card -->
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/graphCard"
 		style="@style/Widget.Optimizer.Card"
@@ -49,7 +40,6 @@
 
 	</com.google.android.material.card.MaterialCardView>
 
-	<!-- Sliders card -->
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/slidersCard"
 		style="@style/Widget.Optimizer.Card"
@@ -81,7 +71,6 @@
 				android:layout_height="wrap_content"
 				android:max="100"
 				android:paddingVertical="6dp"
-				android:progress="0"
 				android:progressTint="@color/primaryColor"
 				android:thumbTint="@color/primaryColor" />
 
@@ -99,7 +88,6 @@
 				android:layout_height="wrap_content"
 				android:max="100"
 				android:paddingVertical="6dp"
-				android:progress="0"
 				android:progressTint="@color/secondaryColor"
 				android:thumbTint="@color/secondaryColor" />
 
@@ -117,7 +105,6 @@
 				android:layout_height="wrap_content"
 				android:max="100"
 				android:paddingVertical="6dp"
-				android:progress="0"
 				android:progressTint="#F59E0B"
 				android:thumbTint="#F59E0B" />
 
@@ -125,7 +112,6 @@
 
 	</com.google.android.material.card.MaterialCardView>
 
-	<!-- Allocation card -->
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/quantitiesCard"
 		style="@style/Widget.Optimizer.Card"
@@ -154,9 +140,7 @@
 
 	</com.google.android.material.card.MaterialCardView>
 
-	<!-- ======================== CONTENT SECTION END ========================== -->
-
-	<!-- ======================== NAVIGATION SECTION START ===================== -->
+	<!-- ======================== NAVIGATION SECTION =========================== -->
 
 	<com.google.android.material.button.MaterialButton
 		android:id="@+id/btnBack"
@@ -169,7 +153,5 @@
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent" />
-
-	<!-- ======================== NAVIGATION SECTION END ======================= -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>

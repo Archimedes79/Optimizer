@@ -4,23 +4,18 @@
 	style="@style/Widget.Optimizer.Card"
 	android:layout_width="match_parent"
 	android:layout_height="wrap_content"
-	android:layout_marginHorizontal="0dp"
 	android:layout_marginVertical="3dp">
 
 	<LinearLayout
 		android:layout_width="match_parent"
 		android:layout_height="wrap_content"
-		android:gravity="center_vertical"
-		android:orientation="horizontal">
+		android:gravity="center_vertical">
 
-		<!-- Colour accent strip -->
 		<View
 			android:id="@+id/viewSecurityColor"
 			android:layout_width="5dp"
-			android:layout_height="match_parent"
-			android:background="@android:color/darker_gray" />
+			android:layout_height="match_parent" />
 
-		<!-- Single text view: caption line + detail lines -->
 		<TextView
 			android:id="@+id/tvSecurityContent"
 			android:layout_width="0dp"
@@ -30,7 +25,6 @@
 			android:paddingHorizontal="12dp"
 			android:paddingVertical="8dp" />
 
-		<!-- Delete button -->
 		<ImageButton
 			android:id="@+id/btnRemoveSecurity"
 			android:layout_width="40dp"

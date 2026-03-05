@@ -6,31 +6,22 @@
 	android:id="@+id/manage_main"
 	android:layout_width="match_parent"
 	android:layout_height="match_parent"
-	android:background="@color/backgroundColor"
 	tools:context=".ManageSecuritiesActivity">
 
-	<!-- ======================== CAPTION SECTION START ======================== -->
+	<!-- ======================== CAPTION SECTION ============================== -->
 
 	<TextView
 		android:id="@+id/tvScreenTitle"
+		style="@style/Widget.Optimizer.Caption"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
-		android:fontFamily="sans-serif-medium"
-		android:paddingHorizontal="16dp"
-		android:paddingTop="8dp"
-		android:paddingBottom="4dp"
 		android:text="Manage Assets"
-		android:textColor="@color/textPrimary"
-		android:textSize="20sp"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent" />
 
-	<!-- ======================== CAPTION SECTION END ========================== -->
+	<!-- ======================== CONTENT SECTION ============================== -->
 
-	<!-- ======================== CONTENT SECTION START ======================== -->
-
-	<!-- Input card wrapping all fields -->
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/inputCard"
 		style="@style/Widget.Optimizer.Card"
@@ -63,8 +54,7 @@
 					android:id="@+id/etIdentifier"
 					android:layout_width="match_parent"
 					android:layout_height="wrap_content"
-					android:textAllCaps="true"
-					android:textColor="@color/textPrimary" />
+					android:textAllCaps="true" />
 
 			</com.google.android.material.textfield.TextInputLayout>
 
@@ -107,8 +97,7 @@
 					android:id="@+id/etQuantity"
 					android:layout_width="match_parent"
 					android:layout_height="wrap_content"
-					android:inputType="numberDecimal"
-					android:textColor="@color/textPrimary" />
+					android:inputType="numberDecimal" />
 
 			</com.google.android.material.textfield.TextInputLayout>
 
@@ -118,7 +107,6 @@
 				android:layout_height="wrap_content"
 				android:layout_marginHorizontal="4dp"
 				android:text="€"
-				android:textColor="@color/textPrimary"
 				android:textSize="18sp"
 				android:visibility="invisible"
 				app:layout_constraintBottom_toBottomOf="@id/tilQuantity"
@@ -141,8 +129,7 @@
 				<com.google.android.material.textfield.TextInputEditText
 					android:id="@+id/etCustomName"
 					android:layout_width="match_parent"
-					android:layout_height="wrap_content"
-					android:textColor="@color/textPrimary" />
+					android:layout_height="wrap_content" />
 
 			</com.google.android.material.textfield.TextInputLayout>
 
@@ -153,7 +140,6 @@
 				android:layout_height="wrap_content"
 				android:layout_marginTop="8dp"
 				android:text="EUR"
-				android:textColor="@color/textSecondary"
 				android:textSize="13sp"
 				app:layout_constraintEnd_toEndOf="@+id/tilQuantity"
 				app:layout_constraintStart_toStartOf="@+id/tilQuantity"
@@ -165,7 +151,6 @@
 				android:layout_height="wrap_content"
 				android:layout_marginTop="8dp"
 				android:text="Fixed"
-				android:textColor="@color/textSecondary"
 				android:textSize="13sp"
 				app:layout_constraintEnd_toEndOf="@+id/tilCustomName"
 				app:layout_constraintStart_toStartOf="@+id/tilCustomName"
@@ -194,16 +179,13 @@
 		android:layout_marginHorizontal="16dp"
 		android:layout_marginTop="4dp"
 		android:clipToPadding="false"
-		android:fadeScrollbars="false"
 		android:scrollbars="vertical"
 		app:layout_constraintBottom_toTopOf="@+id/btnDone"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@+id/pbSearching" />
 
-	<!-- ======================== CONTENT SECTION END ========================== -->
-
-	<!-- ======================== NAVIGATION SECTION START ===================== -->
+	<!-- ======================== NAVIGATION SECTION =========================== -->
 
 	<com.google.android.material.button.MaterialButton
 		android:id="@+id/btnDone"
@@ -216,7 +198,5 @@
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent" />
-
-	<!-- ======================== NAVIGATION SECTION END ======================= -->
 
 </androidx.constraintlayout.widget.ConstraintLayout>
