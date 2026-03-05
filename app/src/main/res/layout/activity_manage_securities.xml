@@ -45,7 +45,7 @@
 		<androidx.constraintlayout.widget.ConstraintLayout
 			android:layout_width="match_parent"
 			android:layout_height="wrap_content"
-			android:padding="16dp">
+			android:padding="12dp">
 
 			<!-- Row 1: Ticker | Color | Add -->
 			<com.google.android.material.textfield.TextInputLayout
@@ -96,7 +96,7 @@
 				style="@style/Widget.Optimizer.TextInput"
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
-				android:layout_marginTop="12dp"
+				android:layout_marginTop="8dp"
 				android:hint="Qty"
 				app:layout_constraintEnd_toStartOf="@+id/tvEuroSymbol"
 				app:layout_constraintHorizontal_weight="0.6"
@@ -131,7 +131,7 @@
 				style="@style/Widget.Optimizer.TextInput"
 				android:layout_width="0dp"
 				android:layout_height="wrap_content"
-				android:layout_marginTop="12dp"
+				android:layout_marginTop="8dp"
 				android:hint="Alias (Optional)"
 				app:layout_constraintEnd_toEndOf="parent"
 				app:layout_constraintHorizontal_weight="1.4"

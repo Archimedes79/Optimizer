@@ -1,124 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    style="@style/Widget.Optimizer.Card"
-    android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    android:layout_marginHorizontal="4dp"
-    android:layout_marginVertical="4dp">
+	xmlns:app="http://schemas.android.com/apk/res-auto"
+	style="@style/Widget.Optimizer.Card"
+	android:layout_width="match_parent"
+	android:layout_height="wrap_content"
+	android:layout_marginHorizontal="0dp"
+	android:layout_marginVertical="3dp">
 
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical"
-        android:orientation="horizontal">
+	<LinearLayout
+		android:layout_width="match_parent"
+		android:layout_height="wrap_content"
+		android:gravity="center_vertical"
+		android:orientation="horizontal">
 
-        <!-- Colour accent strip -->
-        <View
-            android:id="@+id/viewSecurityColor"
-            android:layout_width="6dp"
-            android:layout_height="match_parent"
-            android:background="@android:color/darker_gray" />
+		<!-- Colour accent strip -->
+		<View
+			android:id="@+id/viewSecurityColor"
+			android:layout_width="5dp"
+			android:layout_height="match_parent"
+			android:background="@android:color/darker_gray" />
 
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical"
-            android:paddingHorizontal="14dp"
-            android:paddingVertical="12dp">
+		<!-- Single text view: caption line + detail lines -->
+		<TextView
+			android:id="@+id/tvSecurityContent"
+			android:layout_width="0dp"
+			android:layout_height="wrap_content"
+			android:layout_weight="1"
+			android:lineSpacingExtra="2dp"
+			android:paddingHorizontal="12dp"
+			android:paddingVertical="8dp" />
 
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+		<!-- Delete button -->
+		<ImageButton
+			android:id="@+id/btnRemoveSecurity"
+			android:layout_width="40dp"
+			android:layout_height="40dp"
+			android:layout_marginEnd="6dp"
+			android:background="?attr/selectableItemBackgroundBorderless"
+			android:contentDescription="Remove"
+			android:src="@android:drawable/ic_delete"
+			app:tint="@color/deleteRed" />
 
-                <TextView
-                    android:id="@+id/tvManageName"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/textPrimary"
-                    android:textSize="15sp"
-                    android:textStyle="bold"
-                    android:text="Security Name" />
+	</LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvLimitingMarker"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="Limiting"
-                    android:textColor="@color/secondaryColor"
-                    android:textSize="11sp"
-                    android:textStyle="italic"
-                    android:visibility="gone" />
-
-            </LinearLayout>
-
-            <TextView
-                android:id="@+id/tvManageCustomName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/textSecondary"
-                android:textSize="13sp"
-                android:text="Custom Name"
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvManageAlias"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/textSecondary"
-                android:textSize="12sp"
-                android:text="Alias: "
-                android:visibility="gone" />
-
-            <TextView
-                android:id="@+id/tvManageIdentifier"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textColor="@color/textSecondary"
-                android:textSize="12sp"
-                android:text="WKN/ISIN" />
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
-
-                <TextView
-                    android:id="@+id/tvManageQuantity"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textColor="@color/textPrimary"
-                    android:textSize="12sp"
-                    android:text="Quantity: 0" />
-
-                <TextView
-                    android:id="@+id/tvManageFixed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:text="FIXED"
-                    android:textColor="@color/fixedBadge"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    android:visibility="gone" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <ImageButton
-            android:id="@+id/btnRemoveSecurity"
-            android:layout_width="44dp"
-            android:layout_height="44dp"
-            android:layout_marginEnd="8dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Remove"
-            android:src="@android:drawable/ic_delete"
-            app:tint="@color/deleteRed" />
-
-    </LinearLayout>
 </com.google.android.material.card.MaterialCardView>
