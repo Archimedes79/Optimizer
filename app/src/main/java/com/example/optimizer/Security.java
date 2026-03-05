@@ -204,9 +204,10 @@ public class Security {
     public int getStartIndex() { return startIndex; }
     public int getEndIndex()   { return endIndex; }
 
-    /** Number of entries in the common sub-range (inclusive). */
+    /** Number of entries in the common sub-range (inclusive). Returns 0 if invalid. */
     public int getCommonRangeLength() {
-        return (epochDays != null && epochDays.length > 0) ? endIndex - startIndex + 1 : 0;
+        if (epochDays == null || epochDays.length == 0 || endIndex < startIndex) return 0;
+        return endIndex - startIndex + 1;
     }
 
     // ── Interpolation helpers ───────────────────────────────────────────────
@@ -259,7 +260,7 @@ public class Security {
      */
     public float[] getNormalizedValues() {
         int len = getCommonRangeLength();
-        if (len < 1 || valuesOverTime == null) return new float[0];
+        if (len < 1 || valuesOverTime == null || startIndex + len > valuesOverTime.length) return new float[0];
         float lastVal = valuesOverTime[endIndex];
         if (lastVal == 0f) return new float[len];
 

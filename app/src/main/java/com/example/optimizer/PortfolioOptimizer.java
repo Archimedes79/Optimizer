@@ -180,7 +180,9 @@ public class PortfolioOptimizer {
         try {
             cov = new Covariance(returns).getCovarianceMatrix();
             for (int i = 0; i < nAssets; i++) cov.setEntry(i, i, cov.getEntry(i, i) + 1e-4);
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Log.w(TAG, "Covariance computation failed", e);
+        }
 
         long ts = System.currentTimeMillis();
         double[] gmv = calculateGMVWeights(nAssets, cov);
@@ -247,7 +249,9 @@ public class PortfolioOptimizer {
                 for (int i = 0; i < n; i++) w[i] /= posSum;
                 return w;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Log.w(TAG, "MaxSharpe optimisation failed", e);
+        }
 
         return equalWeights(n);
     }
@@ -279,7 +283,9 @@ public class PortfolioOptimizer {
                 for (int i = 0; i < n; i++) w[i] /= posSum;
                 return w;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Log.w(TAG, "GMV optimisation failed", e);
+        }
 
         return equalWeights(n);
     }
@@ -334,7 +340,9 @@ public class PortfolioOptimizer {
                 for (int i = 0; i < n; i++) best[i] = Math.max(0, best[i]) / sum;
                 return best;
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Log.w(TAG, "MinDD optimisation failed", e);
+        }
 
         return equalWeights(n);
     }

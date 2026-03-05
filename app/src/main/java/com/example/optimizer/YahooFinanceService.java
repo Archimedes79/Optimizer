@@ -199,6 +199,7 @@ public class YahooFinanceService {
             Log.d(TAG, "Populating data for " + security.getSymbol() + " took " + (System.currentTimeMillis() - start) + "ms");
             return true;
         } catch (Exception e) {
+            Log.w(TAG, "populateSecurityData failed for " + security.getSymbol(), e);
             return false;
         }
     }
@@ -239,7 +240,9 @@ public class YahooFinanceService {
                     }
                 }
             }
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            Log.w(TAG, "FX rate fetch failed for " + pair, e);
+        }
 
         List<Double> converted = new ArrayList<>();
         double lastKnownRate = 1.0; 

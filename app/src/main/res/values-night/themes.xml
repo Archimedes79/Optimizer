@@ -1,11 +1,16 @@
 <resources>
-    <!-- Base application theme. -->
+    <!-- Night theme: mirrors the day theme so the app always uses the light colour scheme. -->
     <style name="Base.Theme.Optimizer" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="colorPrimary">@color/primaryLightColor</item>
-        <item name="colorPrimaryVariant">@color/primaryColor</item>
+        <item name="colorPrimary">@color/primaryColor</item>
+        <item name="colorPrimaryVariant">@color/primaryDarkColor</item>
         <item name="colorOnPrimary">@color/white</item>
-        <item name="colorSecondary">@color/secondaryLightColor</item>
+        <item name="colorSecondary">@color/secondaryColor</item>
         <item name="colorOnSecondary">@color/white</item>
+        <item name="android:colorBackground">@color/backgroundColor</item>
+        <item name="colorSurface">@color/cardBackgroundColor</item>
+        <item name="colorOnSurface">@color/textPrimary</item>
+        <item name="colorOnSurfaceVariant">@color/textSecondary</item>
         <item name="android:statusBarColor">@color/primaryDarkColor</item>
+        <item name="android:navigationBarColor">@color/backgroundColor</item>
     </style>
 </resources>

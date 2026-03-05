@@ -134,6 +134,7 @@ public class Portfolio {
         }
 
         for (Security s : securities) {
+            if (s.getEpochDays() == null || s.getEpochDays().length == 0) continue;
             s.setStartIndex(maxStart);
             s.setEndIndex(minEnd);
         }
