@@ -96,6 +96,6 @@ public class InterpolatedDataOptimizerTest {
     public void minDrawdownPrefersTheStrongestOverATwoYearWindow() {
         int window = 24 * DAYS_PER_MONTH;
         double[] w = weights(optimizer(window), 0, 0, 1);
-        assertTrue(describe("min drawdown", window, w), w[0] > 0.5);
+        assertTrue(describe("min drawdown", window, w), w[0] > 0.9);
     }
 }

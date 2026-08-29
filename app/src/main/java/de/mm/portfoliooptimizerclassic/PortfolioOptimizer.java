@@ -54,6 +54,8 @@ public class PortfolioOptimizer {
     private static final int MIN_OPTIMIZATION_POINTS = 20;
     /** Share of the average variance blended into the covariance matrix. */
     private static final double SHRINKAGE = 0.05;
+    /** Drawdowns within this of the best count as equal, and growth decides. */
+    private static final double DRAWDOWN_TIE = 1e-6;
 
     /** False while the window holds too little data for a meaningful optimisation. */
     private volatile boolean resultAvailable = false;
@@ -459,6 +461,8 @@ public class PortfolioOptimizer {
             return maxDD;
         };
 
+        List<double[]> candidates = new ArrayList<>();
+
         try {
             // The weights live in a [0,1] box, so the default initial trust-region
             // radius of 10 spans the whole domain many times over: BOBYQA cannot
@@ -483,13 +487,44 @@ public class PortfolioOptimizer {
             for (double d : best) sum += Math.max(0, d);
             if (sum > 0) {
                 for (int i = 0; i < n; i++) best[i] = Math.max(0, best[i]) / sum;
-                return best;
+                candidates.add(best);
             }
         } catch (Exception e) {
             Log.w(TAG, "MinDD optimisation failed", e);
         }
 
-        return equalWeights(n);
+        // Every single position and equal weights, as for Max Sharpe: cheap, and it
+        // gives the tie-break below something to choose from.
+        for (int i = 0; i < n; i++) {
+            double[] w = new double[n];
+            w[i] = 1.0;
+            candidates.add(w);
+        }
+        candidates.add(equalWeights(n));
+
+        // The smallest drawdown is rarely unique - once a blend stops dropping at
+        // all, every further shift is worth exactly as much to the objective, and a
+        // plain minimiser simply stops at whichever of those it reached first. Among
+        // the portfolios that share the smallest drawdown, take the one that gained
+        // the most over the window.
+        double bestDD = Double.POSITIVE_INFINITY;
+        for (double[] w : candidates) bestDD = Math.min(bestDD, objective.value(w));
+
+        double[] best = null;
+        double bestGrowth = Double.NEGATIVE_INFINITY;
+        for (double[] w : candidates) {
+            if (objective.value(w) > bestDD + DRAWDOWN_TIE) continue;
+            double growth = 0;
+            for (int i = 0; i < n; i++) {
+                double s0 = window.getEntry(i, 0);
+                if (s0 != 0) growth += w[i] * (window.getEntry(i, m - 1) / s0);
+            }
+            if (growth > bestGrowth) {
+                bestGrowth = growth;
+                best = w;
+            }
+        }
+        return (best != null) ? best : equalWeights(n);
     }
 
     // ── Helpers ──────────────────────────────────────────────────────────────
