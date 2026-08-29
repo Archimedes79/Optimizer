@@ -28,7 +28,12 @@ public class Security {
     private int[]   epochDays;        // days since 1970-01-01
     private double  quantity;
     private int     color;
-    private boolean isFixed;
+    /**
+     * Excluded from the optimisation. Deliberately transient: this is a decision
+     * about the run you are looking at right now, not a property of the position,
+     * so it starts cleared on every launch and can be toggled at any time.
+     */
+    private transient boolean isFixed;
 
     /** First array index inside the portfolio-wide common date range. */
     private transient int startIndex;
