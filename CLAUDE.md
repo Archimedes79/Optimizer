@@ -19,18 +19,17 @@ The maintainer writes German — answer in German.
 
 ## Current state
 
-Two commits are ahead of `origin/master` and **not pushed yet**:
+Released. `master` and the tag `v1.0.0` are pushed, the repo is renamed, and CI has
+run green three times — twice on `master`, once on the tag — so the code compiles
+and the 18 unit tests pass. The feared `compileSdk { release(36) { minorApiLevel =
+1 } }` problem did not materialise: the workflow's fallback to plain
+`platforms;android-36` is what actually carries the build.
 
-1. Rename to Portfolio Optimizer Classic (`com.example.optimizer` →
-   `de.mm.portfoliooptimizerclassic`), new icon, CI, proprietary licence.
-2. Fixes from a code review: crash and data-loss bugs, several wrong optimiser
-   results, doc corrections.
-
-Open, in order: `git push` → rename the repo on GitHub to
-`Portfolio_Optimizer_Classic` → `git remote set-url origin …` → `git tag v1.0.0 &&
-git push origin v1.0.0`. Nothing has ever been compiled since the rename — the first
-CI run is the first real compiler pass. If it fails, `compileSdk { release(36) {
-minorApiLevel = 1 } }` needing SDK platform 36.1 is the most likely cause.
+One thing is open: the four `RELEASE_*` secrets do not exist yet, so the published
+APK is **debug-signed** (`PortfolioOptimizerClassic-v1.0.0-debugsigned.apk`). It
+installs, but no later signed build can update it. Add the secrets as
+`docs/RELEASING.md` describes and cut a new tag; the asset is then named
+`…-signed.apk`.
 
 ## Commands
 
