@@ -1,4 +1,4 @@
-package com.example.optimizer;
+package de.mm.portfoliooptimizerclassic;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -250,7 +250,7 @@ public class PortfolioGraphView extends FrameLayout {
             }
         }
 
-        LineDataSet totalSet = new LineDataSet(totalEntries, "Portfolio Index");
+        LineDataSet totalSet = new LineDataSet(totalEntries, getContext().getString(R.string.graph_legend_portfolio_index));
         totalSet.setColor(0xFF1A2138);  // textPrimary
         totalSet.setLineWidth(2.5f);
         totalSet.setDrawCircles(false);

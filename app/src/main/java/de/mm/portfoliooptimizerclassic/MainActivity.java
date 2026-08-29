@@ -1,8 +1,9 @@
-package com.example.optimizer;
+package de.mm.portfoliooptimizerclassic;
 
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
@@ -102,9 +103,9 @@ public class MainActivity extends AppCompatActivity {
         // --- header row ---
         TableRow header = new TableRow(this);
         header.setPadding(0, 0, 0, dpToPx(2));
-        header.addView(makeText("Name", hintColor, textSizeSp, Gravity.START, true));
-        header.addView(makeText("Units", hintColor, textSizeSp, Gravity.END, true));
-        header.addView(makeText("Pct", hintColor, textSizeSp, Gravity.END, true));
+        header.addView(makeText(getString(R.string.common_col_name), hintColor, textSizeSp, Gravity.START, true));
+        header.addView(makeText(getString(R.string.main_col_units), hintColor, textSizeSp, Gravity.END, true));
+        header.addView(makeText(getString(R.string.main_col_pct), hintColor, textSizeSp, Gravity.END, true));
         allocationTable.addView(header);
 
         // --- compute per-security percentages and sort descending ---
@@ -163,22 +164,27 @@ public class MainActivity extends AppCompatActivity {
 
     private void syncPortfolio() {
         if (portfolio.getSecurities().isEmpty()) {
-            Toast.makeText(this, "No assets to sync", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.main_toast_no_assets), Toast.LENGTH_SHORT).show();
             return;
         }
 
         if (pbSync != null) pbSync.setVisibility(View.VISIBLE);
         findViewById(R.id.btnSync).setEnabled(false);
 
-        yahooFinanceService.syncPortfolio(portfolio, new YahooFinanceService.Callback<Void>() {
+        yahooFinanceService.syncPortfolio(portfolio, new YahooFinanceService.Callback<List<String>>() {
             @Override
-            public void onSuccess(Void result) {
+            public void onSuccess(List<String> failed) {
                 runOnUiThread(() -> {
                     if (pbSync != null) pbSync.setVisibility(View.GONE);
                     findViewById(R.id.btnSync).setEnabled(true);
                     portfolio.save(MainActivity.this);
                     refreshUI();
-                    Toast.makeText(MainActivity.this, "Sync complete", Toast.LENGTH_SHORT).show();
+                    // Everything that did come through is already saved; name the rest.
+                    String message = (failed == null || failed.isEmpty())
+                            ? getString(R.string.main_toast_sync_complete)
+                            : getString(R.string.main_toast_sync_partial,
+                                    TextUtils.join(", ", failed));
+                    Toast.makeText(MainActivity.this, message, Toast.LENGTH_LONG).show();
                 });
             }
 
@@ -187,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (pbSync != null) pbSync.setVisibility(View.GONE);
                     findViewById(R.id.btnSync).setEnabled(true);
-                    showErrorDialog("Sync Failed", errorMessage);
+                    showErrorDialog(getString(R.string.error_sync_failed_title), errorMessage);
                 });
             }
         });
@@ -197,7 +203,7 @@ public class MainActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("OK", null)
+                .setPositiveButton(android.R.string.ok, null)
                 .show();
     }
 

@@ -1,4 +1,4 @@
-package com.example.optimizer;
+package de.mm.portfoliooptimizerclassic;
 
 import android.content.Context;
 import android.util.Log;
@@ -55,7 +55,14 @@ public class Portfolio {
             Type type = new TypeToken<ArrayList<Security>>() {}.getType();
             securities = gson.fromJson(reader, type);
         } catch (IOException e) {
-            e.printStackTrace();
+            Log.e(TAG, "Could not read " + FILE_NAME, e);
+            securities = null;
+        } catch (RuntimeException e) {
+            // Malformed JSON (JsonSyntaxException / JsonIOException) would crash the
+            // app on every start. Move the file aside so the user can recover.
+            Log.e(TAG, "Corrupt " + FILE_NAME + " - starting with an empty portfolio", e);
+            quarantine(file);
+            securities = null;
         }
 
         if (securities == null) {
@@ -65,14 +72,43 @@ public class Portfolio {
         recalculateCommonRange();
     }
 
-    /** Saves the current list to internal JSON file. */
+    /**
+     * Saves the current list to the internal JSON file.
+     *
+     * <p>Writes to a temporary file first and only then replaces the previous
+     * one, so an interrupted write can never leave an unreadable portfolio
+     * behind.</p>
+     */
     public void save(Context context) {
         File file = new File(context.getFilesDir(), FILE_NAME);
-        try (FileWriter writer = new FileWriter(file)) {
-            Gson gson = new Gson();
-            gson.toJson(securities, writer);
-        } catch (IOException e) {
-            e.printStackTrace();
+        File tmp  = new File(context.getFilesDir(), FILE_NAME + ".tmp");
+
+        try (FileWriter writer = new FileWriter(tmp)) {
+            new Gson().toJson(securities, writer);
+        } catch (IOException | RuntimeException e) {
+            Log.e(TAG, "Could not write " + FILE_NAME, e);
+            deleteQuietly(tmp);
+            return;
+        }
+
+        if (!tmp.renameTo(file)) {
+            Log.e(TAG, "Could not replace " + FILE_NAME);
+            deleteQuietly(tmp);
+        }
+    }
+
+    /** Moves an unreadable portfolio file aside so it is never parsed again. */
+    private void quarantine(File file) {
+        File backup = new File(file.getParentFile(), FILE_NAME + ".corrupt");
+        deleteQuietly(backup);
+        if (!file.renameTo(backup)) {
+            deleteQuietly(file);
+        }
+    }
+
+    private static void deleteQuietly(File file) {
+        if (file.exists() && !file.delete()) {
+            Log.w(TAG, "Could not delete " + file.getName());
         }
     }
 
@@ -96,6 +132,11 @@ public class Portfolio {
 
     public List<Security> getSecurities() {
         return securities;
+    }
+
+    /** Maximum number of securities the optimiser is dimensioned for. */
+    public static int getMaxSecurities() {
+        return MAX_SECURITIES;
     }
 
     // ── Common-range calculation ────────────────────────────────────────────

@@ -1,0 +1,73 @@
+<resources>
+
+    <!-- Common -->
+    <string name="common_col_name">Name</string>
+    <string name="common_back_to_portfolio">Zurück zum Portfolio</string>
+    <string name="common_euro_symbol">€</string>
+    <string name="common_yes">ja</string>
+    <string name="common_no">nein</string>
+
+    <!-- Activity labels -->
+    <string name="manage_activity_label">Portfolio verwalten</string>
+    <string name="optimize_activity_label">Portfolio optimieren</string>
+
+    <!-- Portfolio screen -->
+    <string name="main_title">Portfolio</string>
+    <string name="main_btn_assets">Werte</string>
+    <string name="main_btn_sync">Sync</string>
+    <string name="main_btn_optimize">Optimieren</string>
+    <string name="main_col_units">Anteile</string>
+    <string name="main_col_pct">Anteil</string>
+    <string name="main_toast_no_assets">Keine Werte zum Synchronisieren</string>
+    <string name="main_toast_sync_complete">Sync abgeschlossen</string>
+
+    <!-- Manage Assets screen -->
+    <string name="manage_title">Werte verwalten</string>
+    <string name="manage_hint_identifier">Ticker oder ISIN</string>
+    <string name="manage_hint_qty">Menge</string>
+    <string name="manage_hint_alias">Alias (optional)</string>
+    <string name="manage_switch_eur">EUR</string>
+    <string name="manage_switch_fixed">Fixiert</string>
+    <string name="manage_btn_add">Hinzufügen</string>
+    <string name="manage_btn_update">Aktualisieren</string>
+    <string name="manage_remove_content_description">Entfernen</string>
+    <string name="manage_toast_enter_id_and_qty">Bitte ID und Menge eingeben</string>
+    <string name="manage_toast_invalid_number">Ungültiges Zahlenformat</string>
+    <string name="manage_toast_price_lookup_failed">Kursabfrage fehlgeschlagen, Menge auf 0 gesetzt</string>
+    <string name="manage_toast_removed">%1$s entfernt</string>
+    <string name="manage_toast_updated">Aktualisiert: %1$s</string>
+    <string name="manage_toast_added">Hinzugefügt: %1$s</string>
+    <string name="manage_dialog_select_ticker">Richtigen Ticker auswählen</string>
+    <string name="manage_dialog_ticker_option">%1$s (%2$s)\nDatenpunkte: %3$d</string>
+    <string name="manage_item_alias">Alias: %1$s</string>
+    <string name="manage_item_id">ID: %1$s</string>
+    <string name="manage_item_qty">Menge: %1$.4f</string>
+    <string name="manage_item_fixed">Fixiert: %1$s</string>
+    <string name="manage_item_limiting">"  ·  Begrenzend"</string>
+
+    <!-- Optimize screen -->
+    <string name="optimize_title">Optimieren</string>
+    <string name="optimize_var_label">Minimale Varianz: %1$d%%</string>
+    <string name="optimize_var_label_zero" formatted="false">Minimale Varianz: 0%</string>
+    <string name="optimize_exp_label">Max. Sharpe Ratio: %1$d%%</string>
+    <string name="optimize_exp_label_zero" formatted="false">Max. Sharpe Ratio: 0%</string>
+    <string name="optimize_mdd_label">Min. Drawdown: %1$d%%</string>
+    <string name="optimize_mdd_label_zero" formatted="false">Min. Drawdown: 0%</string>
+    <string name="optimize_col_delta_units">ΔAnteile</string>
+    <string name="optimize_col_delta_alloc">ΔAllok.</string>
+
+    <!-- Graph -->
+    <string name="graph_legend_portfolio_index">Portfolio-Index</string>
+    <string name="graph_marker_value">Wert: %1$.2f</string>
+    <string name="graph_marker_unknown_date">Unbekannt</string>
+    <string name="graph_marker_no_date">Kein Datum</string>
+
+    <!-- Errors -->
+    <string name="error_sync_failed_title">Sync fehlgeschlagen</string>
+    <string name="error_search_failed_title">Suche fehlgeschlagen</string>
+    <string name="error_no_valid_securities">Keine gültigen Werte mit historischen Daten gefunden.</string>
+    <!-- Added during release hardening -->
+    <string name="main_toast_sync_partial">Sync abgeschlossen \u2013 nicht aktualisiert: %1$s</string>
+    <string name="manage_toast_portfolio_full">Portfolio ist voll \u2013 h\u00f6chstens %1$d Werte</string>
+    <string name="optimize_empty">Noch keine Werte. F\u00fcge welche unter \u201eWerte\u201c hinzu.</string>
+</resources>

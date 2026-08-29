@@ -1,4 +1,4 @@
-package com.example.optimizer;
+package de.mm.portfoliooptimizerclassic;
 
 import android.graphics.Color;
 import android.graphics.Typeface;
@@ -17,7 +17,6 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -142,15 +141,19 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         // ── detail lines ────────────────────────────────────────────────
         StringBuilder detail = new StringBuilder();
         String alias = security.getAlias();
-        detail.append("Alias: ").append((alias != null && !alias.isEmpty()) ? alias : "–");
+        detail.append(holder.itemView.getContext().getString(R.string.manage_item_alias,
+                (alias != null && !alias.isEmpty()) ? alias : "–"));
         detail.append('\n');
-        detail.append("ID: ").append(security.getSymbol() != null ? security.getSymbol() : "–");
+        detail.append(holder.itemView.getContext().getString(R.string.manage_item_id,
+                security.getSymbol() != null ? security.getSymbol() : "–"));
         detail.append('\n');
-        detail.append(String.format(Locale.getDefault(), "Qty: %.4f", security.getQuantity()));
+        detail.append(holder.itemView.getContext().getString(R.string.manage_item_qty, security.getQuantity()));
         detail.append('\n');
-        detail.append("Fixed: ").append(security.isFixed() ? "yes" : "no");
+        detail.append(holder.itemView.getContext().getString(R.string.manage_item_fixed,
+                holder.itemView.getContext().getString(
+                        security.isFixed() ? R.string.common_yes : R.string.common_no)));
         if (isLimiting) {
-            detail.append("  ·  Limiting");
+            detail.append(holder.itemView.getContext().getString(R.string.manage_item_limiting));
         }
 
         // ── assemble spannable ──────────────────────────────────────────

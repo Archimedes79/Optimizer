@@ -10,10 +10,10 @@
 
 	<TextView
 		android:id="@+id/tvTitle"
-		style="@style/Widget.Optimizer.Caption"
+		style="@style/Widget.PortfolioOptimizerClassic.Caption"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
-		android:text="Optimize"
+		android:text="@string/optimize_title"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent" />
@@ -22,7 +22,7 @@
 
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/graphCard"
-		style="@style/Widget.Optimizer.Card"
+		style="@style/Widget.PortfolioOptimizerClassic.Card"
 		android:layout_width="0dp"
 		android:layout_height="280dp"
 		android:layout_marginHorizontal="16dp"
@@ -31,7 +31,7 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@id/tvTitle">
 
-		<com.example.optimizer.PortfolioGraphView
+		<de.mm.portfoliooptimizerclassic.PortfolioGraphView
 			android:id="@+id/optimizeGraph"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
@@ -40,9 +40,21 @@
 
 	</com.google.android.material.card.MaterialCardView>
 
+	<!-- Spinner shown while the optimisation runs off the UI thread -->
+	<ProgressBar
+		android:id="@+id/optimizeProgress"
+		android:layout_width="wrap_content"
+		android:layout_height="wrap_content"
+		android:indeterminateTint="@color/primaryColor"
+		android:visibility="gone"
+		app:layout_constraintBottom_toBottomOf="@id/graphCard"
+		app:layout_constraintEnd_toEndOf="@id/graphCard"
+		app:layout_constraintStart_toStartOf="@id/graphCard"
+		app:layout_constraintTop_toTopOf="@id/graphCard" />
+
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/slidersCard"
-		style="@style/Widget.Optimizer.Card"
+		style="@style/Widget.PortfolioOptimizerClassic.Card"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
 		android:layout_marginHorizontal="16dp"
@@ -60,10 +72,10 @@
 
 			<TextView
 				android:id="@+id/tvVarLabel"
-				style="@style/TextAppearance.Optimizer.Label"
+				style="@style/TextAppearance.PortfolioOptimizerClassic.Label"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				android:text="Minimum Variance: 0%" />
+				android:text="@string/optimize_var_label_zero" />
 
 			<SeekBar
 				android:id="@+id/sbReduceVariance"
@@ -76,10 +88,10 @@
 
 			<TextView
 				android:id="@+id/tvExpLabel"
-				style="@style/TextAppearance.Optimizer.Label"
+				style="@style/TextAppearance.PortfolioOptimizerClassic.Label"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				android:text="Max Sharpe Ratio: 0%" />
+				android:text="@string/optimize_exp_label_zero" />
 
 			<SeekBar
 				android:id="@+id/sbMaxExpectation"
@@ -92,10 +104,10 @@
 
 			<TextView
 				android:id="@+id/tvMddLabel"
-				style="@style/TextAppearance.Optimizer.Label"
+				style="@style/TextAppearance.PortfolioOptimizerClassic.Label"
 				android:layout_width="wrap_content"
 				android:layout_height="wrap_content"
-				android:text="Min Drawdown: 0%" />
+				android:text="@string/optimize_mdd_label_zero" />
 
 			<SeekBar
 				android:id="@+id/sbMinDrawdown"
@@ -112,7 +124,7 @@
 
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/quantitiesCard"
-		style="@style/Widget.Optimizer.Card"
+		style="@style/Widget.PortfolioOptimizerClassic.Card"
 		android:layout_width="0dp"
 		android:layout_height="0dp"
 		android:layout_marginHorizontal="16dp"
@@ -142,12 +154,12 @@
 
 	<com.google.android.material.button.MaterialButton
 		android:id="@+id/btnBack"
-		style="@style/Widget.Optimizer.Button.Tonal"
+		style="@style/Widget.PortfolioOptimizerClassic.Button.Tonal"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
 		android:layout_marginHorizontal="16dp"
 		android:layout_marginBottom="8dp"
-		android:text="Back to Portfolio"
+		android:text="@string/common_back_to_portfolio"
 		app:layout_constraintBottom_toBottomOf="parent"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent" />

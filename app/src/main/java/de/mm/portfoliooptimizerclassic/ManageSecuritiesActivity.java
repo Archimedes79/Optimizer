@@ -1,4 +1,4 @@
-package com.example.optimizer;
+package de.mm.portfoliooptimizerclassic;
 
 import android.os.Bundle;
 import android.text.Editable;
@@ -83,7 +83,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 if (editingSecurity == security) {
                     clearInputs();
                 }
-                Toast.makeText(ManageSecuritiesActivity.this, "Removed " + security.getDisplayName(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(ManageSecuritiesActivity.this, getString(R.string.manage_toast_removed, security.getDisplayName()), Toast.LENGTH_SHORT).show();
             }
 
             @Override
@@ -100,7 +100,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 swUnit.setChecked(false);
                 tvEuroSymbol.setVisibility(View.INVISIBLE);
                 swFixed.setChecked(security.isFixed());
-                btnAdd.setText("Update");
+                btnAdd.setText(R.string.manage_btn_update);
                 etIdentifier.setEnabled(true);
             }
 
@@ -177,7 +177,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         boolean isFixed = swFixed.isChecked();
 
         if (identifierInput.isEmpty() || qtyInputStr.isEmpty()) {
-            Toast.makeText(this, "Please enter both ID and Quantity", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.manage_toast_enter_id_and_qty), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -185,7 +185,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         try {
             inputValue = Double.parseDouble(qtyInputStr);
         } catch (NumberFormatException e) {
-            Toast.makeText(this, "Invalid number format", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.manage_toast_invalid_number), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -210,7 +210,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                     }
 
                     if (filteredResults.isEmpty()) {
-                        showErrorDialog("Search failed", "No valid securities with historical data found.");
+                        showErrorDialog(getString(R.string.error_search_failed_title), getString(R.string.error_no_valid_securities));
                         return;
                     }
 
@@ -227,7 +227,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     pbSearching.setVisibility(View.GONE);
                     btnAdd.setEnabled(true);
-                    showErrorDialog("Search failed", errorMessage);
+                    showErrorDialog(getString(R.string.error_search_failed_title), errorMessage);
                 });
             }
         });
@@ -237,16 +237,16 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         String[] options = new String[results.size()];
         for (int i = 0; i < results.size(); i++) {
             Security s = results.get(i);
-            options[i] = String.format(Locale.getDefault(), "%s (%s)\nData Points: %d", 
+            options[i] = getString(R.string.manage_dialog_ticker_option,
                     s.getName(), s.getSymbol(), s.getNumberOfEntries());
         }
 
         new AlertDialog.Builder(this)
-                .setTitle("Select the correct Ticker")
+                .setTitle(R.string.manage_dialog_select_ticker)
                 .setItems(options, (dialog, which) -> {
                     finalizeAddition(results.get(which), inputValue, isEuro, quantityFieldUnchanged, isFixed);
                 })
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton(android.R.string.cancel, null)
                 .show();
     }
 
@@ -259,7 +259,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             float[] values = selectedSecurity.getValuesOverTime();
             if (values == null || values.length == 0 || values[values.length - 1] == 0) {
                 finalQuantity = 0;
-                Toast.makeText(this, "Price lookup failed, quantity set to 0", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, getString(R.string.manage_toast_price_lookup_failed), Toast.LENGTH_LONG).show();
             } else {
                 finalQuantity = inputValue / values[values.length - 1];
             }
@@ -282,7 +282,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             portfolio.recalculateCommonRange();
             portfolio.save(this);
             adapter.notifyDataSetChanged();
-            Toast.makeText(this, "Updated: " + editingSecurity.getDisplayName(), Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.manage_toast_updated, editingSecurity.getDisplayName()), Toast.LENGTH_SHORT).show();
             clearInputs();
         } else {
             selectedSecurity.setQuantity(finalQuantity);
@@ -291,7 +291,11 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                 portfolio.save(this);
                 adapter.notifyDataSetChanged();
                 clearInputs();
-                Toast.makeText(this, "Added: " + selectedSecurity.getDisplayName(), Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, getString(R.string.manage_toast_added, selectedSecurity.getDisplayName()), Toast.LENGTH_SHORT).show();
+            } else {
+                // The portfolio is capped; without this the add would fail silently.
+                Toast.makeText(this, getString(R.string.manage_toast_portfolio_full,
+                        Portfolio.getMaxSecurities()), Toast.LENGTH_LONG).show();
             }
         }
     }
@@ -300,7 +304,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
-                .setPositiveButton("OK", null)
+                .setPositiveButton(android.R.string.ok, null)
                 .show();
     }
 
@@ -314,7 +318,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
         tvEuroSymbol.setVisibility(View.INVISIBLE);
         viewColorPreview.setBackgroundColor(android.graphics.Color.GRAY);
         etIdentifier.setEnabled(true);
-        btnAdd.setText("Add");
+        btnAdd.setText(R.string.manage_btn_add);
         lastSetQuantityText = "";
         initialQuantity = 0;
     }

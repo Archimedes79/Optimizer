@@ -1,4 +1,4 @@
-package com.example.optimizer;
+package de.mm.portfoliooptimizerclassic;
 
 import android.content.Context;
 import android.widget.TextView;
@@ -9,7 +9,6 @@ import com.github.mikephil.charting.highlight.Highlight;
 import com.github.mikephil.charting.utils.MPPointF;
 
 import java.util.List;
-import java.util.Locale;
 
 /**
  * Custom MarkerView for the Portfolio Graph.
@@ -42,13 +41,13 @@ public class PortfolioMarkerView extends MarkerView {
             if (dateIndex >= 0 && dateIndex < dates.size()) {
                 tvDate.setText(dates.get(dateIndex));
             } else {
-                tvDate.setText("Unknown");
+                tvDate.setText(getContext().getString(R.string.graph_marker_unknown_date));
             }
         } else {
-            tvDate.setText("No Date");
+            tvDate.setText(getContext().getString(R.string.graph_marker_no_date));
         }
         
-        tvValue.setText(String.format(Locale.getDefault(), "Value: %.2f", e.getY()));
+        tvValue.setText(getContext().getString(R.string.graph_marker_value, e.getY()));
         
         super.refreshContent(e, highlight);
     }

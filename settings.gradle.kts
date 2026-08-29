@@ -23,5 +23,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Optimizer"
+rootProject.name = "PortfolioOptimizerClassic"
 include(":app")

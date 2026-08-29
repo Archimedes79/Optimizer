@@ -1,9 +1,13 @@
-package com.example.optimizer;
+package de.mm.portfoliooptimizerclassic;
 
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TableLayout;
 import android.widget.TableRow;
@@ -17,6 +21,8 @@ import androidx.core.view.WindowInsetsCompat;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Optimisation UI: three SeekBars (Variance / Sharpe / Drawdown) whose
@@ -39,8 +45,15 @@ public class OptimizeActivity extends AppCompatActivity {
     private TextView tvExpLabel;
     private TextView tvMddLabel;
     private TableLayout optimizeTable;
+    private ProgressBar progressBar;
     private List<Security> securities;
     private PortfolioOptimizer optimizer;
+
+    /** Optimisation is CPU-bound, so it never runs on the UI thread. */
+    private final ExecutorService optimizerExecutor = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private int optimizationGeneration = 0;
+    private boolean optimizationReady = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,17 +79,16 @@ public class OptimizeActivity extends AppCompatActivity {
         tvExpLabel       = findViewById(R.id.tvExpLabel);
         tvMddLabel       = findViewById(R.id.tvMddLabel);
         optimizeTable    = findViewById(R.id.optimizeTable);
+        progressBar      = findViewById(R.id.optimizeProgress);
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
         // Run the three optimisation strategies once at the current zoom level
-        optimizer.calculateOptimizations((int) graphView.getCurrentVisibleCount());
+        runOptimization((int) graphView.getCurrentVisibleCount());
 
         // Re-optimise only when the visible window (zoom) changes
-        graphView.setOnVisibleRangeChangeListener(visibleCount -> {
-            optimizer.calculateOptimizations((int) visibleCount);
-            updateUI();
-        });
+        graphView.setOnVisibleRangeChangeListener(
+                visibleCount -> runOptimization((int) visibleCount));
 
         SeekBar.OnSeekBarChangeListener listener = new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -92,7 +104,52 @@ public class OptimizeActivity extends AppCompatActivity {
         sbMaxSharpe.setOnSeekBarChangeListener(listener);
         sbMinDrawdown.setOnSeekBarChangeListener(listener);
 
-        updateUI();
+        updateSliderLabels();
+    }
+
+    /**
+     * Recomputes the three strategies in the background and refreshes the UI
+     * once the result is in.
+     *
+     * <p>BOBYQA over up to 24 assets takes long enough to stutter the UI, and
+     * every zoom step triggers a new run, so the sliders stay disabled while a
+     * run is in flight; that also keeps the UI from reading optimiser state
+     * that the worker is still writing.</p>
+     */
+    private void runOptimization(int visibleCount) {
+        if (securities.isEmpty()) {
+            optimizationReady = true;
+            updateUI();
+            return;
+        }
+
+        final int generation = ++optimizationGeneration;
+        setSlidersEnabled(false);
+        progressBar.setVisibility(View.VISIBLE);
+
+        optimizerExecutor.execute(() -> {
+            optimizer.calculateOptimizations(visibleCount);
+            mainHandler.post(() -> {
+                // A newer run is already queued - let that one update the UI.
+                if (generation != optimizationGeneration || isFinishing() || isDestroyed()) return;
+                optimizationReady = true;
+                progressBar.setVisibility(View.GONE);
+                setSlidersEnabled(true);
+                updateUI();
+            });
+        });
+    }
+
+    private void setSlidersEnabled(boolean enabled) {
+        sbReduceVariance.setEnabled(enabled);
+        sbMaxSharpe.setEnabled(enabled);
+        sbMinDrawdown.setEnabled(enabled);
+    }
+
+    @Override
+    protected void onDestroy() {
+        optimizerExecutor.shutdownNow();
+        super.onDestroy();
     }
 
     /** Ensures the three sliders never exceed 100% by proportionally reducing the other two. */
@@ -126,16 +183,33 @@ public class OptimizeActivity extends AppCompatActivity {
      * Shows delta units and delta percentage based on normalized allocation change.
      */
     private void updateUI() {
+        updateSliderLabels();
+        if (!optimizationReady) return;
+
+        if (securities.isEmpty()) {
+            optimizeTable.removeAllViews();
+            TableRow empty = new TableRow(this);
+            empty.addView(makeText(getString(R.string.optimize_empty),
+                    getColor(R.color.textSecondary), 12f, Gravity.START, false));
+            optimizeTable.addView(empty);
+            graphView.setSecuritiesWithQuantities(securities, new double[0]);
+            return;
+        }
+
         int varP    = sbReduceVariance.getProgress();
         int sharpeP = sbMaxSharpe.getProgress();
         int mddP    = sbMinDrawdown.getProgress();
 
-        tvVarLabel.setText(String.format(Locale.getDefault(), "Minimum Variance: %d%%", varP));
-        tvExpLabel.setText(String.format(Locale.getDefault(), "Max Sharpe Ratio: %d%%", sharpeP));
-        tvMddLabel.setText(String.format(Locale.getDefault(), "Min Drawdown: %d%%", mddP));
-
         double[] blendedQty = optimizer.getBlendedQuantities(varP / 100.0, sharpeP / 100.0, mddP / 100.0);
         float[] latestPrices = optimizer.getLatestPrices();
+
+        // The optimiser is sized from the security list it was built with; if the
+        // two ever drift apart, skip the refresh rather than index out of bounds.
+        if (blendedQty == null || latestPrices == null
+                || blendedQty.length < securities.size()
+                || latestPrices.length < securities.size()) {
+            return;
+        }
 
         // Calculate total values for normalization
         double totalOrigValue = 0;
@@ -155,9 +229,9 @@ public class OptimizeActivity extends AppCompatActivity {
         // --- header ---
         TableRow header = new TableRow(this);
         header.setPadding(0, 0, 0, dpToPx(2));
-        header.addView(makeText("Name", hintColor, textSizeSp, Gravity.START, true));
-        header.addView(makeText("ΔUnits", hintColor, textSizeSp, Gravity.END, true));
-        header.addView(makeText("ΔAlloc", hintColor, textSizeSp, Gravity.END, true));
+        header.addView(makeText(getString(R.string.common_col_name), hintColor, textSizeSp, Gravity.START, true));
+        header.addView(makeText(getString(R.string.optimize_col_delta_units), hintColor, textSizeSp, Gravity.END, true));
+        header.addView(makeText(getString(R.string.optimize_col_delta_alloc), hintColor, textSizeSp, Gravity.END, true));
         optimizeTable.addView(header);
 
         // --- data rows ---
@@ -193,6 +267,13 @@ public class OptimizeActivity extends AppCompatActivity {
         }
 
         graphView.setSecuritiesWithQuantities(securities, blendedQty);
+    }
+
+    /** Keeps the three slider captions in sync with their current percentages. */
+    private void updateSliderLabels() {
+        tvVarLabel.setText(getString(R.string.optimize_var_label, sbReduceVariance.getProgress()));
+        tvExpLabel.setText(getString(R.string.optimize_exp_label, sbMaxSharpe.getProgress()));
+        tvMddLabel.setText(getString(R.string.optimize_mdd_label, sbMinDrawdown.getProgress()));
     }
 
     /** Creates a styled TextView for table cells. */

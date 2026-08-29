@@ -12,10 +12,10 @@
 
 	<TextView
 		android:id="@+id/tvTitle"
-		style="@style/Widget.Optimizer.Caption"
+		style="@style/Widget.PortfolioOptimizerClassic.Caption"
 		android:layout_width="0dp"
 		android:layout_height="wrap_content"
-		android:text="Portfolio"
+		android:text="@string/main_title"
 		app:layout_constraintEnd_toEndOf="parent"
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toTopOf="parent" />
@@ -24,7 +24,7 @@
 
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/graphCard"
-		style="@style/Widget.Optimizer.Card"
+		style="@style/Widget.PortfolioOptimizerClassic.Card"
 		android:layout_width="0dp"
 		android:layout_height="280dp"
 		android:layout_marginHorizontal="16dp"
@@ -33,7 +33,7 @@
 		app:layout_constraintStart_toStartOf="parent"
 		app:layout_constraintTop_toBottomOf="@id/tvTitle">
 
-		<com.example.optimizer.PortfolioGraphView
+		<de.mm.portfoliooptimizerclassic.PortfolioGraphView
 			android:id="@+id/portfolioGraph"
 			android:layout_width="match_parent"
 			android:layout_height="match_parent"
@@ -51,7 +51,7 @@
 
 	<com.google.android.material.card.MaterialCardView
 		android:id="@+id/allocationCard"
-		style="@style/Widget.Optimizer.Card"
+		style="@style/Widget.PortfolioOptimizerClassic.Card"
 		android:layout_width="0dp"
 		android:layout_height="0dp"
 		android:layout_marginHorizontal="16dp"
@@ -94,30 +94,30 @@
 
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/btnAddRemove"
-			style="@style/Widget.Optimizer.Button.Primary"
+			style="@style/Widget.PortfolioOptimizerClassic.Button.Primary"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
 			android:layout_marginEnd="6dp"
 			android:layout_weight="1"
-			android:text="Assets" />
+			android:text="@string/main_btn_assets" />
 
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/btnSync"
-			style="@style/Widget.Optimizer.Button.Tonal"
+			style="@style/Widget.PortfolioOptimizerClassic.Button.Tonal"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
 			android:layout_marginHorizontal="6dp"
 			android:layout_weight="1"
-			android:text="Sync" />
+			android:text="@string/main_btn_sync" />
 
 		<com.google.android.material.button.MaterialButton
 			android:id="@+id/btnOptimize"
-			style="@style/Widget.Optimizer.Button.Secondary"
+			style="@style/Widget.PortfolioOptimizerClassic.Button.Secondary"
 			android:layout_width="0dp"
 			android:layout_height="wrap_content"
 			android:layout_marginStart="6dp"
 			android:layout_weight="1"
-			android:text="Optimize" />
+			android:text="@string/main_btn_optimize" />
 
 	</LinearLayout>
 

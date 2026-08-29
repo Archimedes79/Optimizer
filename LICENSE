@@ -1,0 +1,65 @@
+Portfolio Optimizer Classic - Software Licence
+Copyright (c) 2026 Mirko Meuter. All rights reserved.
+
+The source code in this repository is published so that anyone can read and
+review it. It is NOT open-source software and it is NOT in the public domain.
+No rights are granted beyond the ones listed under "Permitted use" below.
+
+
+1. PERMITTED USE
+
+   a) You may view, read and study the source code in this repository.
+
+   b) You may download the application package (APK) published under
+      "Releases" and install and run it, free of charge, on devices you own
+      or control, for private, non-commercial purposes.
+
+   c) You may build the application from this source code and run the result
+      on devices you own or control, for private, non-commercial purposes.
+
+
+2. NOT PERMITTED without prior written permission from the copyright holder
+
+   a) Redistributing the source code or the application, in whole or in part,
+      in original or modified form, by any means or on any platform.
+
+   b) Publishing derivative works or ports.
+
+   c) Any commercial use, including bundling the software with, or embedding
+      it in, a product or service that is sold, licensed or monetised.
+
+   d) Removing or altering copyright, licence or attribution notices.
+
+   Note: while this repository is hosted publicly on GitHub, GitHub's Terms of
+   Service grant other GitHub users the ability to view and fork it within
+   GitHub. Nothing beyond that is granted here.
+
+
+3. THIRD-PARTY COMPONENTS
+
+   This software uses third-party open-source components, each covered by its
+   own licence. Those licences govern those components and are reproduced in
+   THIRD-PARTY-NOTICES.md. Nothing in this licence limits any right you hold
+   under them.
+
+   Market data is retrieved from Yahoo Finance. It is neither owned nor
+   licensed by the copyright holder, and it is subject to Yahoo's own terms of
+   service. It is provided for private, non-commercial use only.
+
+
+4. NO WARRANTY
+
+   THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+   IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+   FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+   COPYRIGHT HOLDER BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+   WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
+   OR IN CONNECTION WITH THE SOFTWARE OR ITS USE.
+
+
+5. NOT FINANCIAL ADVICE
+
+   This software is an educational and analytical tool. Its output is not
+   investment advice, not a recommendation and not an offer to buy or sell any
+   financial instrument. Market data may be delayed, incomplete or wrong. Every
+   investment decision, and every consequence of it, is yours alone.

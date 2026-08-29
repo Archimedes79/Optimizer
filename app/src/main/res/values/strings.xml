@@ -1,3 +1,74 @@
 <resources>
-    <string name="app_name">Optimizer</string>
+    <string name="app_name">Portfolio Optimizer Classic</string>
+
+    <!-- Common -->
+    <string name="common_col_name">Name</string>
+    <string name="common_back_to_portfolio">Back to Portfolio</string>
+    <string name="common_euro_symbol">€</string>
+    <string name="common_yes">yes</string>
+    <string name="common_no">no</string>
+
+    <!-- Activity labels -->
+    <string name="manage_activity_label">Manage Portfolio</string>
+    <string name="optimize_activity_label">Optimize Portfolio</string>
+
+    <!-- Portfolio screen -->
+    <string name="main_title">Portfolio</string>
+    <string name="main_btn_assets">Assets</string>
+    <string name="main_btn_sync">Sync</string>
+    <string name="main_btn_optimize">Optimize</string>
+    <string name="main_col_units">Units</string>
+    <string name="main_col_pct">Pct</string>
+    <string name="main_toast_no_assets">No assets to sync</string>
+    <string name="main_toast_sync_complete">Sync complete</string>
+
+    <!-- Manage Assets screen -->
+    <string name="manage_title">Manage Assets</string>
+    <string name="manage_hint_identifier">Ticker or ISIN</string>
+    <string name="manage_hint_qty">Qty</string>
+    <string name="manage_hint_alias">Alias (Optional)</string>
+    <string name="manage_switch_eur">EUR</string>
+    <string name="manage_switch_fixed">Fixed</string>
+    <string name="manage_btn_add">Add</string>
+    <string name="manage_btn_update">Update</string>
+    <string name="manage_remove_content_description">Remove</string>
+    <string name="manage_toast_enter_id_and_qty">Please enter both ID and Quantity</string>
+    <string name="manage_toast_invalid_number">Invalid number format</string>
+    <string name="manage_toast_price_lookup_failed">Price lookup failed, quantity set to 0</string>
+    <string name="manage_toast_removed">Removed %1$s</string>
+    <string name="manage_toast_updated">Updated: %1$s</string>
+    <string name="manage_toast_added">Added: %1$s</string>
+    <string name="manage_dialog_select_ticker">Select the correct Ticker</string>
+    <string name="manage_dialog_ticker_option">%1$s (%2$s)\nData Points: %3$d</string>
+    <string name="manage_item_alias">Alias: %1$s</string>
+    <string name="manage_item_id">ID: %1$s</string>
+    <string name="manage_item_qty">Qty: %1$.4f</string>
+    <string name="manage_item_fixed">Fixed: %1$s</string>
+    <string name="manage_item_limiting">"  ·  Limiting"</string>
+
+    <!-- Optimize screen -->
+    <string name="optimize_title">Optimize</string>
+    <string name="optimize_var_label">Minimum Variance: %1$d%%</string>
+    <string name="optimize_var_label_zero" formatted="false">Minimum Variance: 0%</string>
+    <string name="optimize_exp_label">Max Sharpe Ratio: %1$d%%</string>
+    <string name="optimize_exp_label_zero" formatted="false">Max Sharpe Ratio: 0%</string>
+    <string name="optimize_mdd_label">Min Drawdown: %1$d%%</string>
+    <string name="optimize_mdd_label_zero" formatted="false">Min Drawdown: 0%</string>
+    <string name="optimize_col_delta_units">ΔUnits</string>
+    <string name="optimize_col_delta_alloc">ΔAlloc</string>
+
+    <!-- Graph -->
+    <string name="graph_legend_portfolio_index">Portfolio Index</string>
+    <string name="graph_marker_value">Value: %1$.2f</string>
+    <string name="graph_marker_unknown_date">Unknown</string>
+    <string name="graph_marker_no_date">No Date</string>
+
+    <!-- Errors -->
+    <string name="error_sync_failed_title">Sync Failed</string>
+    <string name="error_search_failed_title">Search failed</string>
+    <string name="error_no_valid_securities">No valid securities with historical data found.</string>
+    <!-- Added during release hardening -->
+    <string name="main_toast_sync_partial">Sync complete \u2013 could not update: %1$s</string>
+    <string name="manage_toast_portfolio_full">Portfolio is full \u2013 at most %1$d assets</string>
+    <string name="optimize_empty">No assets yet. Add some on the Assets screen.</string>
 </resources>

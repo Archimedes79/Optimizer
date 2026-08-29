@@ -1,6 +1,6 @@
 <resources>
 
-    <style name="Base.Theme.Optimizer" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Base.Theme.PortfolioOptimizerClassic" parent="Theme.Material3.DayNight.NoActionBar">
         <item name="colorPrimary">@color/primaryColor</item>
         <item name="colorPrimaryVariant">@color/primaryDarkColor</item>
         <item name="colorOnPrimary">@color/white</item>
@@ -15,15 +15,10 @@
         <item name="android:navigationBarColor">@color/backgroundColor</item>
     </style>
 
-    <style name="Theme.Optimizer" parent="Base.Theme.Optimizer" />
-
-    <style name="Theme.Optimizer.Main" parent="Base.Theme.Optimizer">
-        <item name="android:statusBarColor">@color/backgroundColor</item>
-        <item name="android:windowLightStatusBar">true</item>
-    </style>
+    <style name="Theme.PortfolioOptimizerClassic" parent="Base.Theme.PortfolioOptimizerClassic" />
 
     <!-- Shared button style: pill-shaped, primary tint -->
-    <style name="Widget.Optimizer.Button.Primary" parent="Widget.Material3.Button">
+    <style name="Widget.PortfolioOptimizerClassic.Button.Primary" parent="Widget.Material3.Button">
         <item name="backgroundTint">@color/primaryColor</item>
         <item name="android:textColor">@color/white</item>
         <item name="cornerRadius">24dp</item>
@@ -31,7 +26,7 @@
     </style>
 
     <!-- Secondary button (coral accent) -->
-    <style name="Widget.Optimizer.Button.Secondary" parent="Widget.Material3.Button">
+    <style name="Widget.PortfolioOptimizerClassic.Button.Secondary" parent="Widget.Material3.Button">
         <item name="backgroundTint">@color/secondaryColor</item>
         <item name="android:textColor">@color/white</item>
         <item name="cornerRadius">24dp</item>
@@ -39,13 +34,13 @@
     </style>
 
     <!-- Tonal / outline button for less prominent actions -->
-    <style name="Widget.Optimizer.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
+    <style name="Widget.PortfolioOptimizerClassic.Button.Tonal" parent="Widget.Material3.Button.TonalButton">
         <item name="cornerRadius">24dp</item>
         <item name="android:textAllCaps">false</item>
     </style>
 
     <!-- Consistent card style used across all screens -->
-    <style name="Widget.Optimizer.Card" parent="Widget.Material3.CardView.Elevated">
+    <style name="Widget.PortfolioOptimizerClassic.Card" parent="Widget.Material3.CardView.Elevated">
         <item name="cardCornerRadius">16dp</item>
         <item name="cardElevation">0dp</item>
         <item name="strokeWidth">1dp</item>
@@ -53,7 +48,7 @@
     </style>
 
     <!-- Text input fields -->
-    <style name="Widget.Optimizer.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
+    <style name="Widget.PortfolioOptimizerClassic.TextInput" parent="Widget.Material3.TextInputLayout.OutlinedBox">
         <item name="boxCornerRadiusTopStart">12dp</item>
         <item name="boxCornerRadiusTopEnd">12dp</item>
         <item name="boxCornerRadiusBottomStart">12dp</item>
@@ -63,7 +58,7 @@
     </style>
 
     <!-- Screen caption (used on every screen title) -->
-    <style name="Widget.Optimizer.Caption" parent="android:Widget.TextView">
+    <style name="Widget.PortfolioOptimizerClassic.Caption" parent="android:Widget.TextView">
         <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textColor">@color/textPrimary</item>
         <item name="android:textSize">20sp</item>
@@ -73,7 +68,7 @@
     </style>
 
     <!-- Section header text -->
-    <style name="TextAppearance.Optimizer.Label" parent="TextAppearance.Material3.LabelLarge">
+    <style name="TextAppearance.PortfolioOptimizerClassic.Label" parent="TextAppearance.Material3.LabelLarge">
         <item name="android:textSize">13sp</item>
     </style>
 

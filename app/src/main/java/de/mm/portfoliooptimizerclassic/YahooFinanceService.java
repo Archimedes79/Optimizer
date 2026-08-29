@@ -1,4 +1,4 @@
-package com.example.optimizer;
+package de.mm.portfoliooptimizerclassic;
 
 import android.os.Handler;
 import android.os.Looper;
@@ -34,6 +34,8 @@ public class YahooFinanceService {
     private static final String TAG = "YahooFinanceService";
     private static final String SEARCH_URL = "https://query2.finance.yahoo.com/v1/finance/search?q=";
     private static final String CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/";
+    private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            + "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36";
     
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -104,7 +106,7 @@ public class YahooFinanceService {
      * Uses explicit period1=0 to request the full available history (monthly interval).
      * The {@code range} parameter is ignored; kept for API compatibility.
      */
-    private void fetchDataSync(Security security, String range) {
+    private boolean fetchDataSync(Security security, String range) {
         try {
             long start = System.currentTimeMillis();
             String symbol = security.getSymbol();
@@ -116,27 +118,43 @@ public class YahooFinanceService {
                     + "?period1=0&period2=" + nowSecs + "&interval=1mo";
             String dataResponse = makeRequest(dataUrl);
             JsonObject dataJson = gson.fromJson(dataResponse, JsonObject.class);
-            populateSecurityData(security, dataJson);
+            boolean populated = populateSecurityData(security, dataJson);
             Log.d(TAG, "Fetching data for " + symbol + " took "
                     + (System.currentTimeMillis() - start) + "ms");
+            return populated;
         } catch (Exception e) {
             Log.w(TAG, "fetchDataSync failed for " + security.getSymbol(), e);
+            return false;
         }
     }
 
-    public void syncPortfolio(Portfolio portfolio, Callback<Void> callback) {
+    /**
+     * Refreshes every security in the portfolio.
+     *
+     * <p>One unreachable ticker must not sink the whole sync, so the callback
+     * succeeds with the list of securities that could <em>not</em> be updated
+     * (empty when everything worked); {@code onError} is reserved for a sync
+     * that broke down completely.</p>
+     */
+    public void syncPortfolio(Portfolio portfolio, Callback<List<String>> callback) {
         executor.execute(() -> {
             try {
                 long start = System.currentTimeMillis();
                 List<Security> securities = portfolio.getSecurities();
+                List<String> failed = new ArrayList<>();
                 for (Security security : securities) {
-                    fetchDataSync(security, "max");
+                    if (!fetchDataSync(security, "max")) {
+                        failed.add(security.getDisplayName());
+                    }
                     Thread.sleep(200); // Small delay to be nice to API
                 }
                 // Recalculate common date range after all data is refreshed
                 portfolio.recalculateCommonRange();
-                Log.d(TAG, "Full portfolio sync took " + (System.currentTimeMillis() - start) + "ms for " + securities.size() + " items");
-                mainHandler.post(() -> callback.onSuccess(null));
+                Log.d(TAG, "Full portfolio sync took " + (System.currentTimeMillis() - start)
+                        + "ms for " + securities.size() + " items, " + failed.size() + " failed");
+                mainHandler.post(() -> callback.onSuccess(failed));
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
             } catch (Exception e) {
                 mainHandler.post(() -> callback.onError("Sync failed: " + e.getMessage()));
             }
@@ -257,21 +275,24 @@ public class YahooFinanceService {
     private String makeRequest(String urlString) throws IOException {
         long start = System.currentTimeMillis();
         HttpURLConnection conn = (HttpURLConnection) new URL(urlString).openConnection();
-        conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
-        conn.setConnectTimeout(15000);
-        conn.setReadTimeout(15000);
-        
-        int responseCode = conn.getResponseCode();
-        if (responseCode != 200) {
-            throw new IOException("Server returned HTTP " + responseCode);
-        }
+        try {
+            conn.setRequestProperty("User-Agent", USER_AGENT);
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(15000);
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-            StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) result.append(line);
-            Log.d(TAG, "HTTP Request to " + urlString + " took " + (System.currentTimeMillis() - start) + "ms");
-            return result.toString();
+            int responseCode = conn.getResponseCode();
+            if (responseCode != 200) {
+                throw new IOException("Server returned HTTP " + responseCode);
+            }
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+                StringBuilder result = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) result.append(line);
+                Log.d(TAG, "HTTP request took " + (System.currentTimeMillis() - start) + "ms");
+                return result.toString();
+            }
         } finally {
             conn.disconnect();
         }
