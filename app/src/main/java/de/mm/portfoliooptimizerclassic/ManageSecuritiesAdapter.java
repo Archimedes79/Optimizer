@@ -97,7 +97,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         holder.itemView.setOnClickListener(v -> {
             long now = System.currentTimeMillis();
             if (security == lastClickedSecurity && now - lastClickTime < DOUBLE_CLICK_TIME_DELTA) {
-                security.setColor(Security.generateRandomColor());
+                security.setColor(Security.randomColour());
                 notifyItemChanged(position);
                 if (listener != null) listener.onSecurityColorChanged(security);
             } else {

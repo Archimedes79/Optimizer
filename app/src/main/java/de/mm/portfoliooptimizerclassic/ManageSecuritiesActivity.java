@@ -156,7 +156,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (editingSecurity == null) {
                     viewColorPreview.setBackgroundColor(
-                            Security.generateConsistentColor(s.toString().trim().toUpperCase(Locale.ROOT)));
+                            Security.colourFor(s.toString().trim().toUpperCase(Locale.ROOT)));
                 }
             }
 
@@ -222,7 +222,13 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                         return;
                     }
 
-                    if (filteredResults.size() == 1) {
+                    // Adding without asking is only safe when the single hit is
+                    // literally what was typed. Yahoo answers "AAPL" with Apple and
+                    // a row of leveraged products on it, and once the ones without
+                    // a usable history drop out, a single survivor can easily be a
+                    // different instrument than the one meant.
+                    if (filteredResults.size() == 1
+                            && YahooFinanceService.isExactMatch(filteredResults.get(0), identifierInput)) {
                         finalizeAddition(filteredResults.get(0), inputValue, isEuro, quantityFieldUnchanged, isFixed);
                     } else {
                         showSelectionDialog(filteredResults, inputValue, isEuro, quantityFieldUnchanged, isFixed);

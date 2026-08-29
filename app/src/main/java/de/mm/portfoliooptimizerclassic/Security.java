@@ -42,46 +42,66 @@ public class Security {
 
     // ── Constructors ────────────────────────────────────────────────────────
 
+    /**
+     * A position always has a colour, from the moment it exists. This is the
+     * constructor the search uses, and an unset colour is 0 - fully transparent,
+     * which left both the row's stripe and the chart line blank. Gson overwrites
+     * the colour from the file whenever one was stored.
+     */
     public Security() {
         this.valuesOverTime = new float[0];
         this.epochDays = new int[0];
         this.startIndex = 0;
         this.endIndex   = 0;
+        this.color      = randomColour();
     }
 
     public Security(String name, String symbol, double quantity) {
         this();
         this.name     = name;
         this.symbol   = symbol;
-        this.quantity  = quantity;
-        this.color    = generateConsistentColor(symbol);
+        this.quantity = quantity;
+        this.color    = colourFor(symbol);
         this.isFixed  = false;
     }
 
     // ── Colour ──────────────────────────────────────────────────────────────
 
-    /** Deterministic darker colour derived from ticker symbol. Avoids black and very light tones. */
-    public static int generateConsistentColor(String seed) {
-        if (seed == null || seed.isEmpty()) return Color.DKGRAY;
-        return colourFrom(new Random(seed.hashCode()));
+    /*
+     * One palette for both entry points: each channel between MIN and MAX, which
+     * keeps every colour clearly visible against the light row background and the
+     * chart. Drawing from the full 0-255 range instead would sooner or later hand
+     * out a near-black or washed-out tone.
+     */
+    private static final int CHANNEL_MIN = 100;
+    private static final int CHANNEL_MAX = 250;
+
+    /** The same colour for the same ticker, every time. */
+    public static int colourFor(String symbol) {
+        if (symbol == null || symbol.isEmpty()) return Color.DKGRAY;
+        return colourFrom(new Random(symbol.hashCode()));
     }
 
-    /**
-     * A fresh colour for the same palette, for the double-tap on a row. Drawing
-     * each channel from the full 0-255 range would sooner or later hand out the
-     * near-black and washed-out tones that {@link #generateConsistentColor}
-     * deliberately avoids - and a line that pale is invisible in the chart.
-     */
-    public static int generateRandomColor() {
+    /** A fresh colour from the same palette - the double tap on a row. */
+    public static int randomColour() {
         return colourFrom(new Random());
     }
 
-    /** Darker, saturated colours only: 100-250 per channel. */
     private static int colourFrom(Random rng) {
-        int r = 100 + rng.nextInt(151);
-        int g = 100 + rng.nextInt(151);
-        int b = 100 + rng.nextInt(151);
-        return Color.rgb(r, g, b);
+        return opaqueRgb(channel(rng), channel(rng), channel(rng));
+    }
+
+    private static int channel(Random rng) {
+        return CHANNEL_MIN + rng.nextInt(CHANNEL_MAX - CHANNEL_MIN + 1);
+    }
+
+    /**
+     * Opaque ARGB, assembled here rather than through {@code Color.rgb} so the
+     * palette can be verified by a plain unit test - the framework method is
+     * stubbed out there and would return 0 for every colour.
+     */
+    private static int opaqueRgb(int r, int g, int b) {
+        return 0xFF000000 | (r << 16) | (g << 8) | b;
     }
 
     // ── Date formatting (on demand, for graph axis labels / marker) ─────────

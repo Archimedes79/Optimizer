@@ -90,10 +90,28 @@ Auf **Werte** trägst du dein Depot ein.
 4. **Fixiert** nimmt die Position von der Optimierung aus (siehe unten).
 5. **Hinzufügen**.
 
-Findet die Suche mehrere passende Papiere, fragt dich ein Dialog, welches gemeint
-ist &ndash; mit Name, Kürzel und der Zahl der verfügbaren Kurspunkte. Nimm im
-Zweifel das mit der längeren Historie: das gemeinsame Zeitfenster aller Positionen
-ist nur so lang wie die kürzeste Reihe.
+Findet die Suche mehrere Papiere &ndash; oder eines, das nicht genau dem entspricht,
+was du getippt hast &ndash; fragt ein Dialog nach, welches gemeint ist, mit Name,
+Kürzel und der Zahl der verfügbaren Kurspunkte. Übernommen ohne Rückfrage wird nur
+ein Treffer, dessen Kürzel exakt deiner Eingabe entspricht. Das ist Absicht: Auf
+`AAPL` antwortet Yahoo mit Apple *und* einer Reihe gehebelter Produkte darauf, und
+davon soll keines unbemerkt in deinem Depot landen.
+
+> **Achte auf die Zahl der Kurspunkte.** Alle Verfahren rechnen auf dem Zeitraum,
+> den sich sämtliche Positionen teilen &ndash; und der ist nur so lang wie die
+> *kürzeste* Reihe. Ein frisch aufgelegter ETF mit acht Monaten Historie verkürzt
+> das Fenster für dein ganzes Depot auf acht Monate, egal wie weit die anderen
+> zurückreichen. Kovarianzen und Drawdowns aus so wenigen Punkten sagen kaum etwas
+> aus. Gibt es dasselbe Papier auch mit langer Historie &ndash; ein anderer
+> Handelsplatz, eine ältere Anteilsklasse, der zugrunde liegende Index &ndash;
+> nimm dieses. In der Liste ist die Position, die das Fenster begrenzt, mit
+> *Limitierend* markiert.
+>
+> **Fixiert** ändert daran nichts: Das Fenster wird bewusst über *alle* Positionen
+> gebildet, auch über die ausgeschlossenen &ndash; so zeigt der Chart genau den
+> Zeitraum, auf dem auch gerechnet wird. Eine fixierte Position nimmt also nicht
+> an der Optimierung teil, begrenzt das Fenster aber weiterhin. Länger wird es nur,
+> wenn du die kurze Reihe durch eine längere ersetzt oder ganz entfernst.
 
 Ist alles eingetragen, holt **Sync** für jede Position die aktuellen Kurse nach.
 

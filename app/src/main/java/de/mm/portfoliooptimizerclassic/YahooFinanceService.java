@@ -17,6 +17,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -87,6 +88,8 @@ public class YahooFinanceService {
                     }
                 }
 
+                rankResults(results, query);
+
                 Log.d(TAG, "Search for '" + query + "' took " + (System.currentTimeMillis() - start) + "ms");
 
                 if (results.isEmpty()) {
@@ -99,6 +102,31 @@ public class YahooFinanceService {
                 mainHandler.post(() -> callback.onError(describe(e)));
             }
         });
+    }
+
+    /**
+     * Orders search hits so the most plausible one comes first: the exact ticker
+     * before anything else, and otherwise the longer history first.
+     *
+     * <p>Yahoo answers "AAPL" with Apple <em>and</em> a row of leveraged products
+     * built on it. Whichever of them happens to come back first is not a useful
+     * default, and a short history is worse than useless here - it shortens the
+     * window every other position is optimised over.</p>
+     */
+    static void rankResults(List<Security> results, String query) {
+        final String wanted = query == null ? "" : query.trim();
+        Collections.sort(results, (a, b) -> {
+            boolean aExact = a.getSymbol() != null && a.getSymbol().equalsIgnoreCase(wanted);
+            boolean bExact = b.getSymbol() != null && b.getSymbol().equalsIgnoreCase(wanted);
+            if (aExact != bExact) return aExact ? -1 : 1;
+            return Integer.compare(b.getNumberOfEntries(), a.getNumberOfEntries());
+        });
+    }
+
+    /** Whether {@code candidate} is exactly what the user typed. */
+    static boolean isExactMatch(Security candidate, String query) {
+        return candidate != null && candidate.getSymbol() != null && query != null
+                && candidate.getSymbol().equalsIgnoreCase(query.trim());
     }
 
     /**
