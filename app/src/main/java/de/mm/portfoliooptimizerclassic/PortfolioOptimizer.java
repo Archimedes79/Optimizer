@@ -460,7 +460,11 @@ public class PortfolioOptimizer {
         };
 
         try {
-            BOBYQAOptimizer opt = new BOBYQAOptimizer(2 * n + 1);
+            // The weights live in a [0,1] box, so the default initial trust-region
+            // radius of 10 spans the whole domain many times over: BOBYQA cannot
+            // build a usable model, stops after its first step and returns a point
+            // that does not depend on the price data at all.
+            BOBYQAOptimizer opt = new BOBYQAOptimizer(2 * n + 1, 0.1, 1e-8);
             double[] sp = new double[n];
             double[] ub = new double[n];
             for (int i = 0; i < n; i++) { sp[i] = 1.0 / n; ub[i] = 1.0; }
