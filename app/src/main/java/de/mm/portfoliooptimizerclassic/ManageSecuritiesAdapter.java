@@ -1,6 +1,5 @@
 package de.mm.portfoliooptimizerclassic;
 
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
@@ -17,7 +16,6 @@ import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
 import java.util.List;
-import java.util.Random;
 
 /**
  * RecyclerView adapter for the Manage Assets list.
@@ -99,11 +97,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         holder.itemView.setOnClickListener(v -> {
             long now = System.currentTimeMillis();
             if (security == lastClickedSecurity && now - lastClickTime < DOUBLE_CLICK_TIME_DELTA) {
-                int newColor = Color.rgb(
-                        new Random().nextInt(256),
-                        new Random().nextInt(256),
-                        new Random().nextInt(256));
-                security.setColor(newColor);
+                security.setColor(Security.generateRandomColor());
                 notifyItemChanged(position);
                 if (listener != null) listener.onSecurityColorChanged(security);
             } else {

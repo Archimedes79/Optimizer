@@ -69,6 +69,85 @@ müsstest.
 > keine anders signierte Installation aktualisieren. Siehe
 > [docs/RELEASING.md](docs/RELEASING.md).
 
+## Bedienung
+
+Drei Bildschirme: das Portfolio mit dem Chart, die Werteverwaltung und der
+Optimierer. Unten führen dich **Werte**, **Sync** und **Optimieren** dorthin.
+
+### Positionen anlegen
+
+Auf **Werte** trägst du dein Depot ein.
+
+1. **Ticker oder ISIN** eingeben &ndash; `VOO`, `SAP.DE`, `IE00B4L5Y983`. Die App
+   fragt Yahoo Finance und lädt die gesamte verfügbare Kurshistorie.
+2. **Menge** eingeben. Standardmäßig ist das die Stückzahl. Legst du den Schalter
+   **EUR** um, gibst du stattdessen einen Eurobetrag ein und die App rechnet ihn
+   mit dem letzten Kurs in Anteile um &ndash; praktisch bei Fondssparplänen, wo du
+   den Betrag kennst und nicht die krummen Anteile.
+3. **Alias** ist optional. Ohne Alias zeigt die App den offiziellen Namen, der
+   gerne mal `iShares Physical Metals PLC O` heißt; mit Alias steht überall dein
+   eigener Name.
+4. **Fixiert** nimmt die Position von der Optimierung aus (siehe unten).
+5. **Hinzufügen**.
+
+Findet die Suche mehrere passende Papiere, fragt dich ein Dialog, welches gemeint
+ist &ndash; mit Name, Kürzel und der Zahl der verfügbaren Kurspunkte. Nimm im
+Zweifel das mit der längeren Historie: das gemeinsame Zeitfenster aller Positionen
+ist nur so lang wie die kürzeste Reihe.
+
+Ist alles eingetragen, holt **Sync** für jede Position die aktuellen Kurse nach.
+
+### Positionen ändern
+
+- **Antippen** lädt die Position zurück in die Eingabefelder; der Knopf heißt dann
+  **Aktualisieren**. Lässt du die Menge unangetastet, bleibt sie exakt erhalten.
+- **Rotes ✕** löscht die Position.
+- **Doppeltippen** auf dieselbe Zeile würfelt ihre Farbe neu &ndash; nützlich, wenn
+  sich zwei Linien im Chart zu ähnlich sehen. Der schmale Streifen links an jeder
+  Zeile zeigt die aktuelle Farbe, der Balken neben dem Eingabefeld die Farbe, die
+  eine neue Position bekommen wird. Die wird aus dem Kürzel abgeleitet, ist also
+  für dasselbe Papier immer dieselbe.
+
+### Der Optimierer
+
+Oben der Chart mit jeder Position und, in Schwarz, deinem Portfolio als Ganzes.
+Darunter drei Regler, darunter die Tabelle mit **ΔAnteile** (wie viele Stücke du
+kaufen oder verkaufen müsstest) und **ΔAllok.** (wie sich der Anteil am Depot
+verschiebt).
+
+Die drei Regler mischen stufenlos zwischen deinem heutigen Depot und drei
+Zielportfolios:
+
+| Regler | Sucht | Führt typischerweise zu |
+| --- | --- | --- |
+| **Minimale Varianz** | die ruhigste Mischung | Übergewicht für schwankungsarme Papiere |
+| **Max. Sharpe Ratio** | den besten Ertrag *je Risiko* | einer Mischung, die Ertrag und Ruhe abwägt |
+| **Min. Drawdown** | den kleinsten zwischenzeitlichen Einbruch | Übergewicht für Papiere, die nie tief fielen |
+
+Zusammen ergeben die drei höchstens 100 %; ziehst du einen hoch, weichen die
+anderen automatisch zurück. Was an 100 % fehlt, bleibt dein jetziges Depot. Alle
+Regler auf 0 heißt also „nichts ändern", ein Regler auf 100 heißt „ganz auf dieses
+Ziel". Der Gesamtwert des Depots bleibt dabei in jeder Stellung gleich &ndash;
+umgeschichtet, nicht ein- oder ausgezahlt.
+
+**Der Zoom wählt den Zeitraum, über den gerechnet wird.** Ziehe im Chart
+waagerecht: nach links verkürzt das Fenster, nach rechts verlängert es. Das
+Fenster endet immer am aktuellen Rand, du wählst also nur, wie weit zurück
+geschaut wird. Nach jedem Zoom rechnet die App neu &ndash; ein Papier kann über
+zehn Jahre glänzend und über sechs Monate schwach aussehen, und der Optimierer
+zeigt dir genau das.
+
+### Wenn dich ein Papier nicht interessiert
+
+Der Schalter **Fixiert** nimmt eine Position aus allen drei Optimierungen heraus:
+Sie behält ihre Stückzahl, ihr Wert wird nicht umverteilt, und sie beeinflusst
+auch die Rechnung der anderen nicht. Sinnvoll für alles, was du ohnehin nicht
+anfassen willst, oder für einen Geldmarktfonds &ndash; der gewinnt sonst fast
+jeden Vergleich, weil er kaum schwankt und nie einbricht.
+
+Der Schalter gilt für die laufende Sitzung und wird bewusst nicht gespeichert:
+Nach einem Neustart der App nehmen wieder alle Positionen teil.
+
 ## Selbst bauen
 
 ```bash

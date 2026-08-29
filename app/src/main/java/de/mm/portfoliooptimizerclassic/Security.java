@@ -63,9 +63,22 @@ public class Security {
     /** Deterministic darker colour derived from ticker symbol. Avoids black and very light tones. */
     public static int generateConsistentColor(String seed) {
         if (seed == null || seed.isEmpty()) return Color.DKGRAY;
-        Random rng = new Random(seed.hashCode());
-        // Generate darker, more saturated colors: 100-250 range per channel
-        int r = 100 + rng.nextInt(151);  // 100-250
+        return colourFrom(new Random(seed.hashCode()));
+    }
+
+    /**
+     * A fresh colour for the same palette, for the double-tap on a row. Drawing
+     * each channel from the full 0-255 range would sooner or later hand out the
+     * near-black and washed-out tones that {@link #generateConsistentColor}
+     * deliberately avoids - and a line that pale is invisible in the chart.
+     */
+    public static int generateRandomColor() {
+        return colourFrom(new Random());
+    }
+
+    /** Darker, saturated colours only: 100-250 per channel. */
+    private static int colourFrom(Random rng) {
+        int r = 100 + rng.nextInt(151);
         int g = 100 + rng.nextInt(151);
         int b = 100 + rng.nextInt(151);
         return Color.rgb(r, g, b);
