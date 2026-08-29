@@ -10,10 +10,10 @@ The full licence text is available at
 
 | Component | Version | Copyright |
 | --- | --- | --- |
-| [MPAndroidChart](https://github.com/PhilJay/MPAndroidChart) | 3.1.0 | Copyright 2020 Philipp Jahoda |
+| [MPAndroidChart](https://github.com/PhilJay/MPAndroidChart) | 3.1.0 (declared in the version catalogue as the JitPack tag `v3.1.0`) | Copyright 2020 Philipp Jahoda |
 | [Apache Commons Math](https://commons.apache.org/proper/commons-math/) | 3.6.1 | Copyright 2001-2016 The Apache Software Foundation |
 | [Gson](https://github.com/google/gson) | 2.11.0 | Copyright 2008 Google Inc. |
-| [AndroidX](https://developer.android.com/jetpack/androidx) (AppCompat, Activity, ConstraintLayout, RecyclerView) | see `gradle/libs.versions.toml` | Copyright The Android Open Source Project |
+| [AndroidX](https://developer.android.com/jetpack/androidx) (AppCompat, Activity, ConstraintLayout, Core, RecyclerView) | see `gradle/libs.versions.toml` | Copyright The Android Open Source Project |
 | [Material Components for Android](https://github.com/material-components/material-components-android) | 1.13.0 | Copyright Google LLC |
 
 Apache Commons Math is a product of the Apache Software Foundation

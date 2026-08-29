@@ -50,6 +50,13 @@ public class PortfolioOptimizer {
     private float[] latestPrices;
 
     private static final int MAX_OPTIMIZATION_POINTS = 256;
+    /** Below this many samples the covariance estimate is noise, not information. */
+    private static final int MIN_OPTIMIZATION_POINTS = 20;
+    /** Share of the average variance blended into the covariance matrix. */
+    private static final double SHRINKAGE = 0.05;
+
+    /** False while the window holds too little data for a meaningful optimisation. */
+    private volatile boolean resultAvailable = false;
 
     // Reusable buffers for getValueVector calls (avoids per-security allocation)
     private int[]   targetDaysBuf;
@@ -76,7 +83,7 @@ public class PortfolioOptimizer {
      * @return mapping int[] (variable-index → original-index), null if no overlap
      */
     private int[] securitiesToMatrix(RealMatrix[] matrixOut, int visibleWindow) {
-        int n = securities.size();
+        int n = Math.min(securities.size(), initialQuantityVector.getDimension());
 
         // snapshot quantities and latest prices
         for (int i = 0; i < n; i++) {
@@ -90,30 +97,52 @@ public class PortfolioOptimizer {
             latestPrices[i] = (hist == null || hist.length == 0) ? 0f : hist[hist.length - 1];
         }
 
-        // use pre-computed common range (all securities share the same window)
+        // Common range over every security that actually carries data. Reading it
+        // from securities.get(0) alone made the whole optimisation depend on which
+        // position happened to be first in the list.
         if (n == 0) return null;
-        int commonStart = securities.get(0).getStartDay();
-        int commonEnd   = securities.get(0).getEndDay();
-        if (commonStart >= commonEnd) return null;
+        int commonStart = Integer.MIN_VALUE;
+        int commonEnd   = Integer.MAX_VALUE;
+        boolean anyData = false;
+        for (int i = 0; i < n; i++) {
+            Security s = securities.get(i);
+            if (s.getNumberOfEntries() == 0 || s.getCommonRangeLength() < 2) continue;
+            commonStart = Math.max(commonStart, s.getStartDay());
+            commonEnd   = Math.min(commonEnd,   s.getEndDay());
+            anyData = true;
+        }
+        if (!anyData || commonStart >= commonEnd) return null;
 
-        int endDay   = commonEnd;
-        int startDay = Math.max(commonStart, commonEnd - visibleWindow);
+        int endDay = commonEnd;
+        // [startDay, endDay] is inclusive, so it spans exactly visibleWindow days.
+        int startDay   = Math.max(commonStart, commonEnd - (visibleWindow - 1));
+        int windowDays = endDay - startDay + 1;
 
-        // collect non-fixed indices
+        // Optimisable = not fixed, and with a price we can convert weights back into.
         List<Integer> varIdx = new ArrayList<>();
         for (int i = 0; i < n; i++) {
-            if (!securities.get(i).isFixed()) {
-                varIdx.add(i);
+            Security s = securities.get(i);
+            if (s.isFixed()) {
+                Log.d(TAG, "Fixed (excluded): " + s.getDisplayName());
+            } else if (latestPrices[i] <= 0 || s.getCommonRangeLength() < 2) {
+                // Such a security would still be handed a weight, but its value could
+                // never be turned back into shares - that budget would simply vanish.
+                Log.w(TAG, "No usable history (excluded): " + s.getDisplayName());
             } else {
-                Log.d(TAG, "Fixed (excluded): " + securities.get(i).getDisplayName());
+                varIdx.add(i);
             }
         }
         int numVar = varIdx.size();
-        Log.d(TAG, "Optimising " + numVar + " of " + n + " securities (rest fixed)");
+        Log.d(TAG, "Optimising " + numVar + " of " + n + " securities (rest fixed or without data)");
         if (numVar == 0) return new int[0];
 
-        int numPoints = Math.min(MAX_OPTIMIZATION_POINTS, visibleWindow);
-        if (numPoints < 2) numPoints = 2;
+        // Never sample more points than the window has days: oversampling produces
+        // runs of identical days, and the resulting zero returns collapse the variance.
+        int numPoints = Math.min(MAX_OPTIMIZATION_POINTS, windowDays);
+        if (numPoints < MIN_OPTIMIZATION_POINTS) {
+            Log.w(TAG, "Only " + numPoints + " samples in the window - not optimising");
+            return null;
+        }
 
         // (Re)allocate shared buffers only when size changes
         if (targetDaysBuf == null || targetDaysBuf.length != numPoints) {
@@ -148,21 +177,24 @@ public class PortfolioOptimizer {
      * distributing the variable-securities budget proportionally.
      */
     private void mapResultsBack(int[] mapping, double[] gmvW, double[] sharpeW, double[] ddW) {
-        float budget = 0;
+        double budget = 0;
         for (int i = 0; i < mapping.length; i++) {
             int idx = mapping[i];
-            budget += (float) initialQuantityVector.getEntry(idx) * latestPrices[idx];
+            budget += initialQuantityVector.getEntry(idx) * latestPrices[idx];
         }
-        if (budget <= 0) budget = 1000.0f;
+        if (budget <= 0) {
+            // Nothing to redistribute. Inventing a budget here used to conjure up
+            // holdings that the portfolio does not have.
+            Log.d(TAG, "Variable part is worth nothing - keeping the current quantities");
+            return;
+        }
 
         for (int i = 0; i < mapping.length; i++) {
             int idx = mapping[i];
-            float price = latestPrices[idx];
-            if (price > 0) {
-                minVarVector.setEntry(idx,    (budget * gmvW[i])    / price);
-                maxSharpeVector.setEntry(idx, (budget * sharpeW[i]) / price);
-                minDDVector.setEntry(idx,     (budget * ddW[i])     / price);
-            }
+            float price = latestPrices[idx];   // > 0, guaranteed by securitiesToMatrix
+            minVarVector.setEntry(idx,    (budget * gmvW[i])    / price);
+            maxSharpeVector.setEntry(idx, (budget * sharpeW[i]) / price);
+            minDDVector.setEntry(idx,     (budget * ddW[i])     / price);
         }
 
         // ── Sanity check: portfolio value must be conserved ─────────────
@@ -199,13 +231,18 @@ public class PortfolioOptimizer {
      * Slider movement only needs {@link #getBlendedQuantities}.
      */
     public void calculateOptimizations(int visibleWindow) {
+        resultAvailable = false;
         if (securities == null || securities.isEmpty()) return;
 
         long t0 = System.currentTimeMillis();
 
         RealMatrix[] wrap = new RealMatrix[1];
         int[] mapping = securitiesToMatrix(wrap, visibleWindow);
-        if (mapping == null || mapping.length == 0) return;
+        if (mapping == null) return;                       // too little usable data
+        if (mapping.length == 0) {                         // everything fixed: valid result
+            resultAvailable = true;
+            return;
+        }
         RealMatrix vm = wrap[0];
         long tMatrix = System.currentTimeMillis() - t0;
 
@@ -217,7 +254,7 @@ public class PortfolioOptimizer {
         RealMatrix cov = null;
         try {
             cov = new Covariance(returns).getCovarianceMatrix();
-            for (int i = 0; i < nAssets; i++) cov.setEntry(i, i, cov.getEntry(i, i) + 1e-4);
+            shrinkTowardsAverageVariance(cov, nAssets);
         } catch (Exception e) {
             Log.w(TAG, "Covariance computation failed", e);
         }
@@ -235,9 +272,35 @@ public class PortfolioOptimizer {
         long tDd = System.currentTimeMillis() - ts;
 
         mapResultsBack(mapping, gmv, sharpe, dd);
+        resultAvailable = true;
 
         Log.d(TAG, String.format("Opt: Total=%dms Matrix=%dms GMV=%dms Sharpe=%dms MinDD=%dms",
                 System.currentTimeMillis() - t0, tMatrix, tGmv, tSharpe, tDd));
+    }
+
+    /**
+     * Shrinks the covariance matrix towards a scaled identity: {@code (1-l)*S + l*avgVar*I}.
+     *
+     * <p>The previous fixed ridge of {@code 1e-4} was scale dependent. A real daily
+     * variance is around {@code 1e-4} for a share and {@code 3e-6} for a series
+     * interpolated from monthly data, so the constant - not the data - decided the
+     * weights, and the result shifted with the zoom level because the covariance
+     * scales with the sampling frequency while a constant does not. Blending with
+     * the average variance keeps the matrix invertible without changing its scale.</p>
+     */
+    private static void shrinkTowardsAverageVariance(RealMatrix cov, int n) {
+        double avgVar = 0;
+        for (int i = 0; i < n; i++) avgVar += cov.getEntry(i, i);
+        avgVar /= n;
+        if (!(avgVar > 0)) avgVar = 1e-12;   // degenerate data: keep it invertible
+
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                double v = cov.getEntry(i, j) * (1.0 - SHRINKAGE);
+                if (i == j) v += SHRINKAGE * avgVar;
+                cov.setEntry(i, j, v);
+            }
+        }
     }
 
     // ── Shared: compute return matrix ───────────────────────────────────────
@@ -257,25 +320,32 @@ public class PortfolioOptimizer {
     // ── Strategy 1: Maximum Sharpe Ratio (Tangency Portfolio) ────────────────
 
     /**
-     * w = Σ⁻¹·(μ - rf) / (1ᵀ·Σ⁻¹·(μ - rf))   with rf = 0.
-     * Long-only: negatives clamped to 0 then re-normalised.
-     * Falls back to equal weights on numerical failure.
+     * Long-only maximum Sharpe ratio with rf = 0.
+     *
+     * <p>Clamping the negative components of the unconstrained tangency solution
+     * {@code Σ⁻¹μ} and re-normalising does <b>not</b> solve the long-only problem:
+     * it can put the entire portfolio into the worst-performing security while a
+     * profitable one is available. So the clamped solution is only one candidate;
+     * every single-security portfolio and equal weights are evaluated alongside it
+     * and the one with the highest actual Sharpe ratio wins. With at most 24
+     * securities that costs nothing measurable.</p>
      */
     private double[] calculateMaxSharpeWeights(int n, double[][] returns, RealMatrix cov) {
-        if (cov == null) return equalWeights(n);
+        if (cov == null || returns.length == 0) return equalWeights(n);
+
+        // mean return per asset
+        double[] mu = new double[n];
+        int T = returns.length;
+        for (int t = 0; t < T; t++) {
+            for (int i = 0; i < n; i++) mu[i] += returns[t][i];
+        }
+        for (int i = 0; i < n; i++) mu[i] /= T;
+
+        List<double[]> candidates = new ArrayList<>();
 
         try {
-            // mean return per asset
-            double[] mu = new double[n];
-            int T = returns.length;
-            for (int t = 0; t < T; t++) {
-                for (int i = 0; i < n; i++) mu[i] += returns[t][i];
-            }
-            for (int i = 0; i < n; i++) mu[i] /= T;
-
             DecompositionSolver solver = new LUDecomposition(cov).getSolver();
-            RealVector muVec = new ArrayRealVector(mu);
-            RealVector sInvMu = solver.solve(muVec);
+            RealVector sInvMu = solver.solve(new ArrayRealVector(mu));
 
             double[] w = new double[n];
             double posSum = 0;
@@ -285,13 +355,44 @@ public class PortfolioOptimizer {
             }
             if (posSum > 0) {
                 for (int i = 0; i < n; i++) w[i] /= posSum;
-                return w;
+                candidates.add(w);
             }
         } catch (Exception e) {
-            Log.w(TAG, "MaxSharpe optimisation failed", e);
+            Log.w(TAG, "MaxSharpe tangency solve failed", e);
         }
 
-        return equalWeights(n);
+        for (int i = 0; i < n; i++) {
+            double[] w = new double[n];
+            w[i] = 1.0;
+            candidates.add(w);
+        }
+        candidates.add(equalWeights(n));
+
+        double[] best = null;
+        double bestSharpe = Double.NEGATIVE_INFINITY;
+        for (double[] w : candidates) {
+            double s = sharpeRatio(w, mu, cov);
+            if (!Double.isNaN(s) && s > bestSharpe) {
+                bestSharpe = s;
+                best = w;
+            }
+        }
+        return (best != null) ? best : equalWeights(n);
+    }
+
+    /** Sharpe ratio of a weight vector with rf = 0; NaN when the risk is degenerate. */
+    private static double sharpeRatio(double[] w, double[] mu, RealMatrix cov) {
+        int n = w.length;
+        double ret = 0;
+        for (int i = 0; i < n; i++) ret += w[i] * mu[i];
+
+        double var = 0;
+        for (int i = 0; i < n; i++) {
+            if (w[i] == 0) continue;
+            for (int j = 0; j < n; j++) var += w[i] * cov.getEntry(i, j) * w[j];
+        }
+        if (!(var > 0)) return Double.NaN;
+        return ret / Math.sqrt(var);
     }
 
     // ── Strategy 2: Global Minimum Variance ─────────────────────────────────
@@ -364,8 +465,10 @@ public class PortfolioOptimizer {
             double[] ub = new double[n];
             for (int i = 0; i < n; i++) { sp[i] = 1.0 / n; ub[i] = 1.0; }
 
+            // 2n+1 interpolation points alone eat 49 evaluations at n = 24; a flat
+            // budget of 500 would silently degenerate into equal weights there.
             PointValuePair res = opt.optimize(
-                    new MaxEval(500),
+                    new MaxEval(Math.max(500, 100 * n)),
                     new ObjectiveFunction(objective),
                     GoalType.MINIMIZE,
                     new InitialGuess(sp),
@@ -424,8 +527,16 @@ public class PortfolioOptimizer {
         return result;
     }
 
+    /**
+     * Whether the last run produced usable optimisation targets. False when the
+     * visible window holds too few samples or no security carries usable history.
+     */
+    public boolean hasResult() {
+        return resultAvailable;
+    }
+
     /** Latest known price per security (float – matches Security data). */
     public float[] getLatestPrices() {
-        return latestPrices;
+        return latestPrices.clone();
     }
 }

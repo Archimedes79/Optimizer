@@ -197,7 +197,9 @@ public class PortfolioGraphView extends FrameLayout {
 
         if (markerView != null) {
             Security first = securities.get(0);
-            markerView.setDateSource(first.getDates(), first.getNumberOfEntries() - commonLen);
+            // The common range does not have to end at this security's last day, so
+            // the offset is where the range starts, not "entries minus range length".
+            markerView.setDateSource(first.getDates(), first.getStartIndex());
         }
 
         // --- last total value (for normalisation of portfolio index) ---
@@ -276,7 +278,7 @@ public class PortfolioGraphView extends FrameLayout {
             if (currentSecurities == null || currentSecurities.isEmpty()) return "";
 
             Security first = currentSecurities.get(0);
-            int offset = first.getNumberOfEntries() - currentMaxEntries;
+            int offset = first.getStartIndex();
             int dateIndex = offset + index;
             if (dateIndex < 0 || dateIndex >= first.getNumberOfEntries()) return "";
 

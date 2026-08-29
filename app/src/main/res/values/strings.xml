@@ -71,4 +71,7 @@
     <string name="main_toast_sync_partial">Sync complete \u2013 could not update: %1$s</string>
     <string name="manage_toast_portfolio_full">Portfolio is full \u2013 at most %1$d assets</string>
     <string name="optimize_empty">No assets yet. Add some on the Assets screen.</string>
+    <!-- Added while fixing the release review findings -->
+    <string name="optimize_not_enough_data">Not enough data in the visible window. Zoom out or add a position with a longer history.</string>
+    <string name="error_technical_detail">The request failed.\n\nDetails: %1$s</string>
 </resources>

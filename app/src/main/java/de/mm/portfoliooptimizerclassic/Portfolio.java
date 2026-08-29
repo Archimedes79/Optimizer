@@ -4,6 +4,8 @@ import android.content.Context;
 import android.util.Log;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 
 import java.io.File;
@@ -25,12 +27,12 @@ import java.util.List;
 public class Portfolio {
     private static final String TAG = "Portfolio";
     private static Portfolio instance;
-    private List<Security> securities;
+    private final List<Security> securities = new ArrayList<>();
+    private boolean loaded = false;
     private static final int MAX_SECURITIES = 24;
     private static final String FILE_NAME = "portfolio.json";
 
     private Portfolio() {
-        this.securities = new ArrayList<>();
     }
 
     public static synchronized Portfolio getInstance() {
@@ -42,31 +44,45 @@ public class Portfolio {
 
     // ── Persistence ─────────────────────────────────────────────────────────
 
+    /**
+     * Loads the portfolio once per process.
+     *
+     * <p>Every entry point should call this rather than {@link #load}: Android can
+     * restart the app directly into any activity after killing the process, and an
+     * activity that finds an empty singleton would overwrite the stored file on its
+     * next save.</p>
+     */
+    public synchronized void ensureLoaded(Context context) {
+        if (!loaded) load(context);
+    }
+
     /** Loads securities from JSON and recalculates the common range. */
-    public void load(Context context) {
+    public synchronized void load(Context context) {
+        loaded = true;
         File file = new File(context.getFilesDir(), FILE_NAME);
-        if (!file.exists()) {
-            securities = new ArrayList<>();
-            return;
+        List<Security> parsed = null;
+
+        if (file.exists()) {
+            try (FileReader reader = new FileReader(file)) {
+                Type type = new TypeToken<ArrayList<Security>>() {}.getType();
+                parsed = new Gson().fromJson(reader, type);
+            } catch (IOException | JsonIOException e) {
+                // A read error says nothing about the file's contents - keep it.
+                Log.e(TAG, "Could not read " + FILE_NAME, e);
+            } catch (JsonSyntaxException e) {
+                // Malformed JSON would crash the app on every start. Move it aside.
+                Log.e(TAG, "Corrupt " + FILE_NAME + " - starting with an empty portfolio", e);
+                quarantine(file);
+            }
         }
 
-        try (FileReader reader = new FileReader(file)) {
-            Gson gson = new Gson();
-            Type type = new TypeToken<ArrayList<Security>>() {}.getType();
-            securities = gson.fromJson(reader, type);
-        } catch (IOException e) {
-            Log.e(TAG, "Could not read " + FILE_NAME, e);
-            securities = null;
-        } catch (RuntimeException e) {
-            // Malformed JSON (JsonSyntaxException / JsonIOException) would crash the
-            // app on every start. Move the file aside so the user can recover.
-            Log.e(TAG, "Corrupt " + FILE_NAME + " - starting with an empty portfolio", e);
-            quarantine(file);
-            securities = null;
-        }
-
-        if (securities == null) {
-            securities = new ArrayList<>();
+        // Replace the contents, not the list instance: a sync running in the
+        // background holds a reference to this list.
+        securities.clear();
+        if (parsed != null) {
+            for (Security s : parsed) {
+                if (s != null) securities.add(s);
+            }
         }
         // transient indices are 0 after deserialisation – fix them
         recalculateCommonRange();
@@ -79,7 +95,7 @@ public class Portfolio {
      * one, so an interrupted write can never leave an unreadable portfolio
      * behind.</p>
      */
-    public void save(Context context) {
+    public synchronized void save(Context context) {
         File file = new File(context.getFilesDir(), FILE_NAME);
         File tmp  = new File(context.getFilesDir(), FILE_NAME + ".tmp");
 
@@ -115,7 +131,7 @@ public class Portfolio {
     // ── Add / Remove ────────────────────────────────────────────────────────
 
     /** Adds a security (max 24) and recalculates the common date range. */
-    public boolean addSecurity(Security security) {
+    public synchronized boolean addSecurity(Security security) {
         if (securities.size() < MAX_SECURITIES) {
             securities.add(security);
             recalculateCommonRange();
@@ -125,13 +141,24 @@ public class Portfolio {
     }
 
     /** Removes a security and recalculates the common date range. */
-    public void removeSecurity(Security security) {
+    public synchronized void removeSecurity(Security security) {
         securities.remove(security);
         recalculateCommonRange();
     }
 
     public List<Security> getSecurities() {
         return securities;
+    }
+
+    /**
+     * Defensive copy for iteration off the UI thread.
+     *
+     * <p>Iterating {@link #getSecurities()} from a background thread throws a
+     * ConcurrentModificationException as soon as the user adds or removes a
+     * position while that loop is running.</p>
+     */
+    public synchronized List<Security> getSecuritiesSnapshot() {
+        return new ArrayList<>(securities);
     }
 
     /** Maximum number of securities the optimiser is dimensioned for. */
@@ -148,13 +175,14 @@ public class Portfolio {
      * <p>Called automatically by add / remove / load.  Call manually after a
      * sync that replaces underlying data arrays.</p>
      */
-    public void recalculateCommonRange() {
-        if (securities == null || securities.isEmpty()) return;
+    public synchronized void recalculateCommonRange() {
+        if (securities.isEmpty()) return;
 
         int maxStart = Integer.MIN_VALUE;
         int minEnd   = Integer.MAX_VALUE;
 
         for (Security s : securities) {
+            if (s == null) continue;
             int[] days = s.getEpochDays();
             if (days == null || days.length == 0) continue;
             maxStart = Math.max(maxStart, days[0]);
@@ -165,6 +193,7 @@ public class Portfolio {
             // No overlap – reset every security to its full range
             Log.w(TAG, "No overlapping date range – using full ranges");
             for (Security s : securities) {
+                if (s == null) continue;
                 int[] days = s.getEpochDays();
                 if (days != null && days.length > 0) {
                     s.setStartIndex(days[0]);
@@ -175,7 +204,7 @@ public class Portfolio {
         }
 
         for (Security s : securities) {
-            if (s.getEpochDays() == null || s.getEpochDays().length == 0) continue;
+            if (s == null || s.getEpochDays() == null || s.getEpochDays().length == 0) continue;
             s.setStartIndex(maxStart);
             s.setEndIndex(minEnd);
         }

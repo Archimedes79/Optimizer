@@ -70,4 +70,7 @@
     <string name="main_toast_sync_partial">Sync abgeschlossen \u2013 nicht aktualisiert: %1$s</string>
     <string name="manage_toast_portfolio_full">Portfolio ist voll \u2013 h\u00f6chstens %1$d Werte</string>
     <string name="optimize_empty">Noch keine Werte. F\u00fcge welche unter \u201eWerte\u201c hinzu.</string>
+    <!-- Added while fixing the release review findings -->
+    <string name="optimize_not_enough_data">Zu wenig Daten im sichtbaren Zeitfenster. Zieh den Graphen weiter auf oder f\u00fcge einen Wert mit l\u00e4ngerer Historie hinzu.</string>
+    <string name="error_technical_detail">Die Anfrage ist fehlgeschlagen.\n\nDetails: %1$s</string>
 </resources>

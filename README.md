@@ -28,9 +28,11 @@ Zielfunktionen und siehst sofort, wie sich dein Portfolio verändern würde:
 
 | Regler | Verfahren | Ziel |
 | --- | --- | --- |
-| **Minimum Variance** | Global Minimum Variance, geschlossene Markowitz-Lösung `w = Σ⁻¹1 / 1ᵀΣ⁻¹1` | geringste Schwankung |
-| **Max Sharpe Ratio** | Tangentialportfolio `w = Σ⁻¹μ / 1ᵀΣ⁻¹μ` (risikoloser Zins = 0) | bestes Rendite-Risiko-Verhältnis |
+| **Minimum Variance** | Global Minimum Variance auf einer regularisierten Kovarianzmatrix; negative Gewichte werden auf 0 geklemmt und der Rest neu normiert (long-only-Näherung) | geringste Schwankung |
+| **Max Sharpe Ratio** | Tangentialportfolio `Σ⁻¹μ` (risikoloser Zins = 0), long-only geklemmt &ndash; und gegen jede Einzelposition sowie die Gleichgewichtung geprüft; es gewinnt die tatsächlich beste Sharpe Ratio | bestes Rendite-Risiko-Verhältnis |
 | **Min Drawdown** | ableitungsfreie BOBYQA-Optimierung auf den maximalen Drawdown | kleinster zwischenzeitlicher Verlust |
+
+Schlägt ein Verfahren numerisch fehl, fällt es auf Gleichgewichtung zurück.
 
 Der nicht verteilte Rest bleibt dein Ist-Portfolio, sodass du stufenlos
 zwischen „alles so lassen“ und „voll optimiert“ mischen kannst. Die Tabelle
@@ -42,13 +44,18 @@ müsstest.
 - Alle Verfahren sind **long-only** &ndash; keine Leerverkäufe.
 - Positionen lassen sich als **fixiert** markieren; sie bleiben unangetastet,
   ihr Wert wird aus der Optimierung herausgerechnet.
-- Der Gesamtwert des Depots bleibt bei jeder Umschichtung erhalten (geprüft mit
-  0,1 % Toleranz).
+- Der Gesamtwert des Depots soll bei jeder Umschichtung erhalten bleiben. Eine
+  Kontrollrechnung mit 0,1 % Toleranz protokolliert Abweichungen lediglich, sie
+  korrigiert nichts.
 - Die Optimierung läuft immer auf dem **sichtbaren Zeitfenster** des Charts:
-  zoomst du den Graphen, wird neu gerechnet.
+  zoomst du den Graphen, wird neu gerechnet. Die Reihen werden dabei auf
+  höchstens 256 äquidistante Stützstellen abgetastet. Gezoomt wird durch
+  horizontales Ziehen – Pinch-Zoom ist im Code ausdrücklich deaktiviert.
 - Bis zu 24 Positionen.
-- Alle Daten liegen ausschließlich lokal auf dem Gerät (`portfolio.json`).
-  Kein Konto, kein Backend, keine Analytics.
+- Alle Daten bleiben lokal auf dem Gerät (`portfolio.json`): kein Konto, kein
+  Backend, keine Analytics. Das Manifest setzt allerdings
+  `android:allowBackup="true"` mit den leeren Standard-Backup-Regeln, sodass
+  Androids systemweites Auto-Backup die Datei mitsichern kann.
 
 ## Installation
 
@@ -71,13 +78,16 @@ cd Portfolio_Optimizer_Classic
 ```
 
 Die fertige APK liegt danach unter `app/build/outputs/apk/release/`.
-Benötigt werden JDK 21 und das Android SDK (Platform 36); Android Studio
-bringt beides mit. Die Unit-Tests laufen mit `./gradlew testDebugUnitTest`.
+Benötigt werden JDK 21 zum Bauen und das Android SDK, Platform 36 mit
+Minor-API-Level 36.1; Android Studio bringt beides mit. Die Unit-Tests laufen
+mit `./gradlew testDebugUnitTest`.
 
 Das App-Icon ist als Adaptive Icon in
-`app/src/main/res/drawable/ic_launcher_*.xml` definiert; die Rastergrafiken für
+`app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` definiert, seine Ebenen
+liegen in `app/src/main/res/drawable/ic_launcher_*.xml`. Die Rastergrafiken für
 ältere Android-Versionen erzeugt `python3 tools/generate_icons.py` aus derselben
-Geometrie neu.
+Geometrie neu; das Skript benötigt Pillow und schreibt zusätzlich
+`docs/icon-512.png`, erzeugt aber kein `ic_launcher_monochrome.xml`.
 
 ## Technik
 
@@ -88,8 +98,8 @@ Java, keine Compose-Abhängigkeit, drei Activities.
 | Mathematik | [Apache Commons Math 3](https://commons.apache.org/proper/commons-math/) (Kovarianzmatrix, BOBYQA) |
 | Charts | [MPAndroidChart](https://github.com/PhilJay/MPAndroidChart) |
 | Persistenz | [Gson](https://github.com/google/gson) &rarr; `filesDir/portfolio.json` |
-| Kursdaten | öffentliche Endpunkte von Yahoo Finance, Monatswerte, linear auf Tageswerte interpoliert |
-| Währung | automatische Umrechnung in EUR über das jeweilige FX-Paar (inkl. GBp) |
+| Kursdaten | öffentliche Endpunkte von Yahoo Finance, Monatswerte, linear auf Tageswerte interpoliert; Werte vor dem ersten und nach dem letzten Stützpunkt werden geklemmt, nicht extrapoliert |
+| Währung | automatische Umrechnung in EUR über das jeweilige FX-Paar (inkl. GBp); schlägt der Abruf des Wechselkurses fehl, wird der Preis unverändert übernommen |
 
 ## Hintergrund
 
@@ -107,6 +117,7 @@ dir.
 ## Lizenz
 
 Proprietär, Quellcode einsehbar. Lesen, private Nutzung und Selbstbauen sind
-erlaubt; Weiterverbreitung und kommerzielle Nutzung nicht. Details in
-[LICENSE](LICENSE), Hinweise zu den verwendeten Bibliotheken in
+erlaubt; Weiterverbreitung und kommerzielle Nutzung nicht ohne vorherige
+schriftliche Genehmigung. Details in [LICENSE](LICENSE), Hinweise zu den
+verwendeten Bibliotheken in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

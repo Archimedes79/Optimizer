@@ -34,6 +34,8 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
     private final OnSecurityActionListener listener;
 
     private long lastClickTime = 0;
+    /** The row the previous click landed on – a double click must stay on one row. */
+    private Security lastClickedSecurity = null;
     private static final long DOUBLE_CLICK_TIME_DELTA = 300; // ms
 
     public interface OnSecurityActionListener {
@@ -96,7 +98,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
         // Single-click → edit; double-click → random colour
         holder.itemView.setOnClickListener(v -> {
             long now = System.currentTimeMillis();
-            if (now - lastClickTime < DOUBLE_CLICK_TIME_DELTA) {
+            if (security == lastClickedSecurity && now - lastClickTime < DOUBLE_CLICK_TIME_DELTA) {
                 int newColor = Color.rgb(
                         new Random().nextInt(256),
                         new Random().nextInt(256),
@@ -108,6 +110,7 @@ public class ManageSecuritiesAdapter extends RecyclerView.Adapter<ManageSecuriti
                 if (listener != null) listener.onSecurityClicked(security);
             }
             lastClickTime = now;
+            lastClickedSecurity = security;
         });
     }
 

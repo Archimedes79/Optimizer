@@ -169,14 +169,28 @@ public class Security {
 
     /** Epoch day at the start of the common range. */
     public int getStartDay() {
-        if (epochDays == null || epochDays.length == 0) return 0;
-        return epochDays[startIndex];
+        final int[] days = epochDays;
+        if (days == null || days.length == 0) return 0;
+        return days[clampIndex(startIndex, days.length)];
     }
 
     /** Epoch day at the end of the common range (inclusive). */
     public int getEndDay() {
-        if (epochDays == null || epochDays.length == 0) return 0;
-        return epochDays[endIndex];
+        final int[] days = epochDays;
+        if (days == null || days.length == 0) return 0;
+        return days[clampIndex(endIndex, days.length)];
+    }
+
+    /**
+     * Keeps an index inside an array.
+     *
+     * <p>A background sync can swap in a shorter history while the indices still
+     * point into the previous one; without this the UI thread would read past the
+     * end of the array and crash.</p>
+     */
+    private static int clampIndex(int index, int length) {
+        if (index < 0) return 0;
+        return Math.min(index, length - 1);
     }
 
     /** Binary-search: sets startIndex to the first position with epochDay >= day. */
@@ -259,15 +273,23 @@ public class Security {
      * @return float[commonRangeLength] normalised to 100 at endIndex, or empty
      */
     public float[] getNormalizedValues() {
-        int len = getCommonRangeLength();
-        if (len < 1 || valuesOverTime == null || startIndex + len > valuesOverTime.length) return new float[0];
-        float lastVal = valuesOverTime[endIndex];
+        // Read the array once: a sync running in the background may replace it
+        // between two field accesses.
+        final float[] values = valuesOverTime;
+        if (values == null || values.length == 0) return new float[0];
+
+        int start = clampIndex(startIndex, values.length);
+        int end   = clampIndex(endIndex,   values.length);
+        if (end < start) return new float[0];
+
+        int len = end - start + 1;
+        float lastVal = values[end];
         if (lastVal == 0f) return new float[len];
 
         float scale = 100.0f / lastVal;
         float[] out = new float[len];
         for (int i = 0; i < len; i++) {
-            out[i] = valuesOverTime[startIndex + i] * scale;
+            out[i] = values[start + i] * scale;
         }
         return out;
     }

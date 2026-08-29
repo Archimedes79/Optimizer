@@ -96,7 +96,7 @@ public class YahooFinanceService {
                 }
 
             } catch (Exception e) {
-                mainHandler.post(() -> callback.onError("Search failed: " + e.getMessage()));
+                mainHandler.post(() -> callback.onError(describe(e)));
             }
         });
     }
@@ -140,7 +140,8 @@ public class YahooFinanceService {
         executor.execute(() -> {
             try {
                 long start = System.currentTimeMillis();
-                List<Security> securities = portfolio.getSecurities();
+                // Snapshot: the user can add or remove positions while this runs.
+                List<Security> securities = portfolio.getSecuritiesSnapshot();
                 List<String> failed = new ArrayList<>();
                 for (Security security : securities) {
                     if (!fetchDataSync(security, "max")) {
@@ -156,7 +157,7 @@ public class YahooFinanceService {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (Exception e) {
-                mainHandler.post(() -> callback.onError("Sync failed: " + e.getMessage()));
+                mainHandler.post(() -> callback.onError(describe(e)));
             }
         });
     }
@@ -270,6 +271,12 @@ public class YahooFinanceService {
             converted.add(prices.get(i) * unitFactor * lastKnownRate);
         }
         return converted;
+    }
+
+    /** Technical detail for the error dialog; never null, never an empty string. */
+    private static String describe(Exception e) {
+        String message = e.getMessage();
+        return (message != null && !message.isEmpty()) ? message : e.getClass().getSimpleName();
     }
 
     private String makeRequest(String urlString) throws IOException {

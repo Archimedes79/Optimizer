@@ -45,7 +45,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
         portfolio = Portfolio.getInstance();
-        portfolio.load(this);
+        portfolio.ensureLoaded(this);
 
         yahooFinanceService = new YahooFinanceService();
 
@@ -169,14 +169,17 @@ public class MainActivity extends AppCompatActivity {
         }
 
         if (pbSync != null) pbSync.setVisibility(View.VISIBLE);
-        findViewById(R.id.btnSync).setEnabled(false);
+        // The sync rewrites the price history of every position; leaving the other
+        // two screens reachable would let the user read or edit it mid-update.
+        setActionsEnabled(false);
 
         yahooFinanceService.syncPortfolio(portfolio, new YahooFinanceService.Callback<List<String>>() {
             @Override
             public void onSuccess(List<String> failed) {
                 runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
                     if (pbSync != null) pbSync.setVisibility(View.GONE);
-                    findViewById(R.id.btnSync).setEnabled(true);
+                    setActionsEnabled(true);
                     portfolio.save(MainActivity.this);
                     refreshUI();
                     // Everything that did come through is already saved; name the rest.
@@ -191,12 +194,23 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onError(String errorMessage) {
                 runOnUiThread(() -> {
+                    // The activity can be gone by the time a slow request returns;
+                    // showing a dialog on a dead window crashes the app.
+                    if (isFinishing() || isDestroyed()) return;
                     if (pbSync != null) pbSync.setVisibility(View.GONE);
-                    findViewById(R.id.btnSync).setEnabled(true);
-                    showErrorDialog(getString(R.string.error_sync_failed_title), errorMessage);
+                    setActionsEnabled(true);
+                    showErrorDialog(getString(R.string.error_sync_failed_title),
+                            getString(R.string.error_technical_detail, errorMessage));
                 });
             }
         });
+    }
+
+    /** Enables or disables the three main actions for the duration of a sync. */
+    private void setActionsEnabled(boolean enabled) {
+        findViewById(R.id.btnSync).setEnabled(enabled);
+        findViewById(R.id.btnAddRemove).setEnabled(enabled);
+        findViewById(R.id.btnOptimize).setEnabled(enabled);
     }
 
     private void showErrorDialog(String title, String message) {

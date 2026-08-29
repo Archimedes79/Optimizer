@@ -55,6 +55,11 @@ public class OptimizeActivity extends AppCompatActivity {
     private int optimizationGeneration = 0;
     private boolean optimizationReady = false;
 
+    /** A single zoom drag fires dozens of range events; coalesce them into one run. */
+    private static final long ZOOM_DEBOUNCE_MS = 200L;
+    private int pendingVisibleCount = 0;
+    private final Runnable pendingOptimization = () -> runOptimization(pendingVisibleCount);
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,12 +88,17 @@ public class OptimizeActivity extends AppCompatActivity {
 
         findViewById(R.id.btnBack).setOnClickListener(v -> finish());
 
+        // Hand the chart its data first. Until it has seen the securities it reports
+        // its default range, and the first run would optimise a window that is not
+        // the one on screen.
+        graphView.setSecuritiesWithQuantities(securities, currentQuantities());
+
         // Run the three optimisation strategies once at the current zoom level
         runOptimization((int) graphView.getCurrentVisibleCount());
 
         // Re-optimise only when the visible window (zoom) changes
         graphView.setOnVisibleRangeChangeListener(
-                visibleCount -> runOptimization((int) visibleCount));
+                visibleCount -> scheduleOptimization((int) visibleCount));
 
         SeekBar.OnSeekBarChangeListener listener = new SeekBar.OnSeekBarChangeListener() {
             @Override
@@ -116,7 +126,21 @@ public class OptimizeActivity extends AppCompatActivity {
      * run is in flight; that also keeps the UI from reading optimiser state
      * that the worker is still writing.</p>
      */
+    /**
+     * Waits for the zoom gesture to settle before optimising.
+     *
+     * <p>Every touch move reports a new visible range. Without this, one drag
+     * queues dozens of full optimisation runs on a single worker thread and the
+     * sliders stay disabled long after the finger has left the screen.</p>
+     */
+    private void scheduleOptimization(int visibleCount) {
+        pendingVisibleCount = visibleCount;
+        mainHandler.removeCallbacks(pendingOptimization);
+        mainHandler.postDelayed(pendingOptimization, ZOOM_DEBOUNCE_MS);
+    }
+
     private void runOptimization(int visibleCount) {
+        if (optimizerExecutor.isShutdown()) return;
         if (securities.isEmpty()) {
             optimizationReady = true;
             updateUI();
@@ -146,8 +170,16 @@ public class OptimizeActivity extends AppCompatActivity {
         sbMinDrawdown.setEnabled(enabled);
     }
 
+    /** The portfolio exactly as it stands, for the chart's baseline. */
+    private double[] currentQuantities() {
+        double[] q = new double[securities.size()];
+        for (int i = 0; i < securities.size(); i++) q[i] = securities.get(i).getQuantity();
+        return q;
+    }
+
     @Override
     protected void onDestroy() {
+        mainHandler.removeCallbacks(pendingOptimization);
         optimizerExecutor.shutdownNow();
         super.onDestroy();
     }
@@ -187,12 +219,16 @@ public class OptimizeActivity extends AppCompatActivity {
         if (!optimizationReady) return;
 
         if (securities.isEmpty()) {
-            optimizeTable.removeAllViews();
-            TableRow empty = new TableRow(this);
-            empty.addView(makeText(getString(R.string.optimize_empty),
-                    getColor(R.color.textSecondary), 12f, Gravity.START, false));
-            optimizeTable.addView(empty);
+            showNotice(getString(R.string.optimize_empty));
             graphView.setSecuritiesWithQuantities(securities, new double[0]);
+            return;
+        }
+
+        if (!optimizer.hasResult()) {
+            // Too few samples in the visible window, or no position with usable
+            // history - say so instead of leaving three sliders that do nothing.
+            showNotice(getString(R.string.optimize_not_enough_data));
+            graphView.setSecuritiesWithQuantities(securities, currentQuantities());
             return;
         }
 
@@ -267,6 +303,14 @@ public class OptimizeActivity extends AppCompatActivity {
         }
 
         graphView.setSecuritiesWithQuantities(securities, blendedQty);
+    }
+
+    /** Replaces the allocation table with a single explanatory line. */
+    private void showNotice(String text) {
+        optimizeTable.removeAllViews();
+        TableRow row = new TableRow(this);
+        row.addView(makeText(text, getColor(R.color.textSecondary), 12f, Gravity.START, false));
+        optimizeTable.addView(row);
     }
 
     /** Keeps the three slider captions in sync with their current percentages. */

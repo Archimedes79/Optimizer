@@ -155,7 +155,8 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if (editingSecurity == null) {
-                    viewColorPreview.setBackgroundColor(Security.generateConsistentColor(s.toString().trim().toUpperCase()));
+                    viewColorPreview.setBackgroundColor(
+                            Security.generateConsistentColor(s.toString().trim().toUpperCase(Locale.ROOT)));
                 }
             }
 
@@ -171,7 +172,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
     }
 
     private void searchAndAddOrUpdateSecurity() {
-        String identifierInput = etIdentifier.getText().toString().trim().toUpperCase();
+        String identifierInput = etIdentifier.getText().toString().trim().toUpperCase(Locale.ROOT);
         String qtyInputStr = etQuantity.getText().toString().trim();
         String aliasInput = etCustomName.getText().toString().trim();
         boolean isFixed = swFixed.isChecked();
@@ -183,8 +184,14 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
 
         double inputValue;
         try {
-            inputValue = Double.parseDouble(qtyInputStr);
+            // A German keyboard offers a comma as the decimal separator, and
+            // Double.parseDouble only ever accepts a dot.
+            inputValue = Double.parseDouble(qtyInputStr.replace(',', '.'));
         } catch (NumberFormatException e) {
+            Toast.makeText(this, getString(R.string.manage_toast_invalid_number), Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (!isFiniteAndPositive(inputValue)) {
             Toast.makeText(this, getString(R.string.manage_toast_invalid_number), Toast.LENGTH_SHORT).show();
             return;
         }
@@ -199,6 +206,7 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             @Override
             public void onSuccess(List<Security> results) {
                 runOnUiThread(() -> {
+                    if (isFinishing() || isDestroyed()) return;
                     pbSearching.setVisibility(View.GONE);
                     btnAdd.setEnabled(true);
                     
@@ -225,9 +233,13 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
             @Override
             public void onError(String errorMessage) {
                 runOnUiThread(() -> {
+                    // A search can take a while; the screen may be gone by now and
+                    // a dialog on a dead window would crash the app.
+                    if (isFinishing() || isDestroyed()) return;
                     pbSearching.setVisibility(View.GONE);
                     btnAdd.setEnabled(true);
-                    showErrorDialog(getString(R.string.error_search_failed_title), errorMessage);
+                    showErrorDialog(getString(R.string.error_search_failed_title),
+                            getString(R.string.error_technical_detail, errorMessage));
                 });
             }
         });
@@ -298,6 +310,11 @@ public class ManageSecuritiesActivity extends AppCompatActivity {
                         Portfolio.getMaxSecurities()), Toast.LENGTH_LONG).show();
             }
         }
+    }
+
+    /** Rejects negative, zero, NaN and overflowed ("Infinity") quantities. */
+    private static boolean isFiniteAndPositive(double value) {
+        return !Double.isNaN(value) && !Double.isInfinite(value) && value > 0;
     }
 
     private void showErrorDialog(String title, String message) {

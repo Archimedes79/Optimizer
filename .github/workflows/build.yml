@@ -38,6 +38,17 @@ jobs:
 
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-36 build-tools;36.0.0'
+
+      # compileSdk asks for minor API level 36.1. The package only exists in
+      # channels that already ship it, so a missing package must not fail the
+      # build - android-36 stays the floor.
+      - name: Try the android-36.1 platform
+        run: |
+          set -euo pipefail
+          sdkmanager --install "platforms;android-36.1" \
+            || echo "platforms;android-36.1 is not available in this SDK channel; continuing with platforms;android-36"
 
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
@@ -59,22 +70,29 @@ jobs:
       - name: Decode the signing keystore
         if: env.RELEASE_KEYSTORE_BASE64 != ''
         run: |
-          echo "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          set -euo pipefail
+          printf '%s' "$RELEASE_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          if [ ! -s "$RUNNER_TEMP/release.jks" ]; then
+            echo "RELEASE_KEYSTORE_BASE64 decoded to an empty file - check the secret"
+            exit 1
+          fi
           echo "RELEASE_KEYSTORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
 
       - name: Run unit tests
-        run: ./gradlew --no-daemon --stacktrace testDebugUnitTest
+        run: ./gradlew --stacktrace testDebugUnitTest
 
       - name: Build the release APK
-        run: ./gradlew --no-daemon --stacktrace assembleRelease
+        run: ./gradlew --stacktrace assembleRelease
 
       - name: Collect the APK
         id: collect
         run: |
           set -euo pipefail
           mkdir -p dist
-          apk=$(find app/build/outputs/apk/release -name '*.apk' | head -n1)
-          if [ -z "$apk" ]; then echo "No APK produced"; exit 1; fi
+          shopt -s nullglob
+          apks=(app/build/outputs/apk/release/*.apk)
+          if [ ${#apks[@]} -eq 0 ]; then echo "No APK produced"; exit 1; fi
+          apk="${apks[0]}"
           if [ -n "${RELEASE_KEYSTORE_FILE:-}" ]; then signed="signed"; else signed="debugsigned"; fi
           name="PortfolioOptimizerClassic-${GITHUB_REF_NAME//\//-}-${signed}.apk"
           cp "$apk" "dist/$name"
@@ -104,11 +122,20 @@ jobs:
           SIGNED: ${{ steps.collect.outputs.signed }}
         run: |
           set -euo pipefail
+          shopt -s nullglob
+          apks=(dist/*.apk)
+          if [ ${#apks[@]} -eq 0 ]; then echo "No APK to publish"; exit 1; fi
           if [ "$SIGNED" = "signed" ]; then
             note="Signed with the project upload key."
           else
             note="Signed with the Android debug key. Installable, but it cannot update an install that used a different key. See docs/RELEASING.md."
           fi
-          gh release create "$GITHUB_REF_NAME" dist/*.apk \
-            --title "Portfolio Optimizer Classic $GITHUB_REF_NAME" \
-            --notes "$(printf 'Install the APK below on Android 7.0 or newer.\n\n%s\n\nInstalling from outside an app store requires allowing "Install unknown apps" for your browser or file manager once.' "$note")"
+          # Re-running the same tag must not fail on an existing release.
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists - uploading the APK with --clobber"
+            gh release upload "$GITHUB_REF_NAME" dist/*.apk --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" dist/*.apk \
+              --title "Portfolio Optimizer Classic $GITHUB_REF_NAME" \
+              --notes "$(printf 'Install the APK below on Android 7.0 or newer.\n\n%s\n\nInstalling from outside an app store requires allowing "Install unknown apps" for your browser or file manager once.' "$note")"
+          fi

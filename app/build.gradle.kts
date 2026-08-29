@@ -89,6 +89,8 @@ dependencies {
     implementation(libs.material)
     implementation(libs.activity)
     implementation(libs.constraintlayout)
+    implementation(libs.core)
+    implementation(libs.recyclerview)
     implementation(libs.gson)
     implementation(libs.commons.math3)
     implementation(libs.mpandroidchart)
