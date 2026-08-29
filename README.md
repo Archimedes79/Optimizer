@@ -5,168 +5,166 @@
 <h1 align="center">Portfolio Optimizer Classic</h1>
 
 <p align="center">
-  Eine Android-App, die ein privates Wertpapierdepot nach den klassischen
-  Verfahren der Portfoliotheorie umschichtet &ndash; lokal, ohne Konto,
-  ohne Tracking.
+  An Android app that rebalances a private securities portfolio using the
+  classical methods of portfolio theory &ndash; on the device, no account,
+  no tracking.
 </p>
 
 <p align="center">
-  <a href="../../releases/latest"><img alt="Neuestes Release" src="https://img.shields.io/github/v/release/Archimedes79/Portfolio_Optimizer_Classic?label=Download%20APK"></a>
+  <a href="../../releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Archimedes79/Portfolio_Optimizer_Classic?label=Download%20APK"></a>
   <a href="../../actions/workflows/build.yml"><img alt="Build" src="https://github.com/Archimedes79/Portfolio_Optimizer_Classic/actions/workflows/build.yml/badge.svg"></a>
 </p>
 
+<p align="center"><a href="README.de.md">Diese Seite auf Deutsch</a></p>
+
 ---
 
-## Was die App macht
+## What the app does
 
-Du trägst dein Depot ein &ndash; Ticker oder ISIN, Stückzahl oder Eurobetrag &ndash;
-und die App lädt dazu die vollständige Kurshistorie von Yahoo Finance, rechnet
-alles in Euro um und legt die Reihen auf ein gemeinsames Zeitfenster.
+You enter your holdings &ndash; ticker or ISIN, number of shares or a euro
+amount &ndash; and the app downloads the full price history from Yahoo Finance,
+converts everything to euro and puts the series on one shared time window.
 
-Auf dem Optimierungs-Screen mischst du mit drei Reglern drei klassische
-Zielfunktionen und siehst sofort, wie sich dein Portfolio verändern würde:
+On the optimisation screen, three sliders blend three classical objectives, and
+you see immediately how your portfolio would change:
 
-| Regler | Verfahren | Ziel |
+| Slider | Method | Goal |
 | --- | --- | --- |
-| **Minimum Variance** | Global Minimum Variance auf einer regularisierten Kovarianzmatrix; negative Gewichte werden auf 0 geklemmt und der Rest neu normiert (long-only-Näherung) | geringste Schwankung |
-| **Max Sharpe Ratio** | Tangentialportfolio `Σ⁻¹μ` (risikoloser Zins = 0), long-only geklemmt &ndash; und gegen jede Einzelposition sowie die Gleichgewichtung geprüft; es gewinnt die tatsächlich beste Sharpe Ratio | bestes Rendite-Risiko-Verhältnis |
-| **Min Drawdown** | ableitungsfreie BOBYQA-Optimierung auf den maximalen Drawdown | kleinster zwischenzeitlicher Verlust |
+| **Minimum Variance** | Global Minimum Variance on a regularised covariance matrix; negative weights are clamped to 0 and the rest renormalised (long-only approximation) | smallest fluctuation |
+| **Max Sharpe Ratio** | Tangency portfolio `Σ⁻¹μ` (risk-free rate = 0), clamped long-only &ndash; and checked against every single position as well as equal weights; the genuinely best Sharpe ratio wins | best return per unit of risk |
+| **Min Drawdown** | derivative-free BOBYQA optimisation on the maximum drawdown | smallest interim loss |
 
-Schlägt ein Verfahren numerisch fehl, fällt es auf Gleichgewichtung zurück.
+If a method fails numerically, it falls back to equal weights.
 
-Der nicht verteilte Rest bleibt dein Ist-Portfolio, sodass du stufenlos
-zwischen „alles so lassen“ und „voll optimiert“ mischen kannst. Die Tabelle
-zeigt dir für jede Position, wie viele Anteile du kaufen oder verkaufen
-müsstest.
+Whatever share you do not assign stays in your current portfolio, so you can
+blend continuously between "leave everything alone" and "fully optimised". The
+table shows, for every position, how many shares you would have to buy or sell.
 
-**Weitere Eigenschaften**
+**Further properties**
 
-- Alle Verfahren sind **long-only** &ndash; keine Leerverkäufe.
-- Positionen lassen sich als **fixiert** markieren; sie bleiben unangetastet,
-  ihr Wert wird aus der Optimierung herausgerechnet.
-- Der Gesamtwert des Depots soll bei jeder Umschichtung erhalten bleiben. Eine
-  Kontrollrechnung mit 0,1 % Toleranz protokolliert Abweichungen lediglich, sie
-  korrigiert nichts.
-- Die Optimierung läuft immer auf dem **sichtbaren Zeitfenster** des Charts:
-  zoomst du den Graphen, wird neu gerechnet. Die Reihen werden dabei auf
-  höchstens 256 äquidistante Stützstellen abgetastet. Gezoomt wird durch
-  horizontales Ziehen – Pinch-Zoom ist im Code ausdrücklich deaktiviert.
-- Bis zu 24 Positionen.
-- Alle Daten bleiben lokal auf dem Gerät (`portfolio.json`): kein Konto, kein
-  Backend, keine Analytics. Das Manifest setzt allerdings
-  `android:allowBackup="true"` mit den leeren Standard-Backup-Regeln, sodass
-  Androids systemweites Auto-Backup die Datei mitsichern kann.
+- All methods are **long-only** &ndash; no short selling.
+- Positions can be marked **fixed**; they stay untouched and their value is
+  taken out of the optimisation.
+- The total value of the portfolio is meant to survive every reallocation. A
+  check with 0.1 % tolerance only logs deviations, it corrects nothing.
+- The optimisation always runs on the **visible time window** of the chart:
+  zoom the graph and it is recomputed. The series are sampled to at most 256
+  equidistant points. Zooming is done by dragging horizontally &ndash; pinch
+  zoom is explicitly disabled in the code.
+- Up to 24 positions.
+- All data stays on the device (`portfolio.json`): no account, no backend, no
+  analytics. The manifest does set `android:allowBackup="true"` with the empty
+  default backup rules, so Android's system-wide auto backup may include the
+  file.
 
 ## Installation
 
-1. Unter [**Releases**](../../releases/latest) die aktuelle `.apk` herunterladen.
-2. Beim Öffnen fragt Android einmalig nach der Erlaubnis, Apps aus dieser
-   Quelle zu installieren (Browser bzw. Dateimanager) &ndash; bestätigen.
-3. Installieren. Voraussetzung: **Android 7.0 (API 24)** oder neuer.
+1. Download the current `.apk` from [**Releases**](../../releases/latest).
+2. On opening it, Android asks once for permission to install apps from this
+   source (your browser or file manager) &ndash; confirm.
+3. Install. Requires **Android 7.0 (API 24)** or newer.
 
-> Solange noch kein Signaturschlüssel hinterlegt ist, wird die APK mit dem
-> Android-Debug-Key signiert. Sie lässt sich normal installieren, kann aber
-> keine anders signierte Installation aktualisieren. Siehe
-> [docs/RELEASING.md](docs/RELEASING.md).
+> As long as no signing key is configured, the APK is signed with the Android
+> debug key. It installs normally, but it cannot update an installation that
+> carries a different signature. See [docs/RELEASING.md](docs/RELEASING.md).
 
-## Bedienung
+## Using the app
 
-Drei Bildschirme: das Portfolio mit dem Chart, die Werteverwaltung und der
-Optimierer. Unten führen dich **Werte**, **Sync** und **Optimieren** dorthin.
+Three screens: the portfolio with its chart, the asset management, and the
+optimiser. The buttons at the bottom &ndash; **Assets**, **Sync** and
+**Optimize** &ndash; take you there.
 
-### Positionen anlegen
+### Adding positions
 
-Auf **Werte** trägst du dein Depot ein.
+**Assets** is where you enter your holdings.
 
-1. **Ticker oder ISIN** eingeben &ndash; `VOO`, `SAP.DE`, `IE00B4L5Y983`. Die App
-   fragt Yahoo Finance und lädt die gesamte verfügbare Kurshistorie.
-2. **Menge** eingeben. Standardmäßig ist das die Stückzahl. Legst du den Schalter
-   **EUR** um, gibst du stattdessen einen Eurobetrag ein und die App rechnet ihn
-   mit dem letzten Kurs in Anteile um &ndash; praktisch bei Fondssparplänen, wo du
-   den Betrag kennst und nicht die krummen Anteile.
-3. **Alias** ist optional. Ohne Alias zeigt die App den offiziellen Namen, der
-   gerne mal `iShares Physical Metals PLC O` heißt; mit Alias steht überall dein
-   eigener Name.
-4. **Fixiert** nimmt die Position von der Optimierung aus (siehe unten).
-5. **Hinzufügen**.
+1. Enter a **ticker or ISIN** &ndash; `VOO`, `SAP.DE`, `IE00B4L5Y983`. The app
+   queries Yahoo Finance and loads the entire available price history.
+2. Enter the **quantity**. By default that is a number of shares. Flip the
+   **EUR** switch and you enter a euro amount instead, which the app converts
+   into shares using the latest price &ndash; handy for savings plans, where you
+   know the amount rather than the odd fractional share count.
+3. **Alias** is optional. Without one the app shows the official name, which is
+   sometimes along the lines of `iShares Physical Metals PLC O`; with an alias
+   your own name is used everywhere.
+4. **Fixed** excludes the position from the optimisation (see below).
+5. **Add**.
 
-Findet die Suche mehrere Papiere &ndash; oder eines, das nicht genau dem entspricht,
-was du getippt hast &ndash; fragt ein Dialog nach, welches gemeint ist, mit Name,
-Kürzel und der Zahl der verfügbaren Kurspunkte. Übernommen ohne Rückfrage wird nur
-ein Treffer, dessen Kürzel exakt deiner Eingabe entspricht. Das ist Absicht: Auf
-`AAPL` antwortet Yahoo mit Apple *und* einer Reihe gehebelter Produkte darauf, und
-davon soll keines unbemerkt in deinem Depot landen.
+If the search finds several papers &ndash; or one that is not exactly what you
+typed &ndash; a dialog asks which one you mean, listing name, symbol and the
+number of available price points. A single hit is only accepted without asking
+when its symbol is literally what you typed. That is deliberate: Yahoo answers
+`AAPL` with Apple *and* a row of leveraged products built on it, and none of
+those should end up in your portfolio unnoticed.
 
-> **Achte auf die Zahl der Kurspunkte.** Alle Verfahren rechnen auf dem Zeitraum,
-> den sich sämtliche Positionen teilen &ndash; und der ist nur so lang wie die
-> *kürzeste* Reihe. Ein frisch aufgelegter ETF mit acht Monaten Historie verkürzt
-> das Fenster für dein ganzes Depot auf acht Monate, egal wie weit die anderen
-> zurückreichen. Kovarianzen und Drawdowns aus so wenigen Punkten sagen kaum etwas
-> aus. Gibt es dasselbe Papier auch mit langer Historie &ndash; ein anderer
-> Handelsplatz, eine ältere Anteilsklasse, der zugrunde liegende Index &ndash;
-> nimm dieses. In der Liste ist die Position, die das Fenster begrenzt, mit
-> *Limitierend* markiert.
+> **Watch the number of price points.** Every method computes on the period all
+> positions share &ndash; and that is only as long as the *shortest* series. A
+> recently launched ETF with eight months of history shortens the window for
+> your entire portfolio to eight months, no matter how far the others reach
+> back. Covariances and drawdowns from that few points say very little. If the
+> same exposure is available with a long history &ndash; another exchange, an
+> older share class, the underlying index &ndash; take that one. In the list,
+> the position that limits the window is marked *Limiting*.
 >
-> **Fixiert** ändert daran nichts: Das Fenster wird bewusst über *alle* Positionen
-> gebildet, auch über die ausgeschlossenen &ndash; so zeigt der Chart genau den
-> Zeitraum, auf dem auch gerechnet wird. Eine fixierte Position nimmt also nicht
-> an der Optimierung teil, begrenzt das Fenster aber weiterhin. Länger wird es nur,
-> wenn du die kurze Reihe durch eine längere ersetzt oder ganz entfernst.
+> **Fixed** does not change this: the window is deliberately formed over *all*
+> positions, excluded ones included, so that the chart shows exactly the period
+> being computed on. A fixed position therefore takes no part in the
+> optimisation but still limits the window. It only grows longer if you replace
+> the short series with a longer one or remove it.
 
-Ist alles eingetragen, holt **Sync** für jede Position die aktuellen Kurse nach.
+Once everything is entered, **Sync** fetches current prices for every position.
 
-### Positionen ändern
+### Changing positions
 
-- **Antippen** lädt die Position zurück in die Eingabefelder; der Knopf heißt dann
-  **Aktualisieren**. Lässt du die Menge unangetastet, bleibt sie exakt erhalten.
-- **Rotes ✕** löscht die Position.
-- **Doppeltippen** auf dieselbe Zeile würfelt ihre Farbe neu &ndash; nützlich, wenn
-  sich zwei Linien im Chart zu ähnlich sehen. Der schmale Streifen links an jeder
-  Zeile zeigt die aktuelle Farbe, der Balken neben dem Eingabefeld die Farbe, die
-  eine neue Position bekommen wird. Die wird aus dem Kürzel abgeleitet, ist also
-  für dasselbe Papier immer dieselbe.
+- **Tapping** a row loads it back into the input fields; the button then reads
+  **Update**. Leave the quantity alone and it is preserved exactly.
+- **The red ✕** deletes the position.
+- **Double-tapping** the same row shuffles its colour &ndash; useful when two
+  lines in the chart look too similar. The narrow stripe on the left of each row
+  shows the current colour; the bar next to the input field shows the colour a
+  new position will get. That one is derived from the symbol, so it is always
+  the same for the same paper.
 
-### Der Optimierer
+### The optimiser
 
-Oben der Chart mit jeder Position und, in Schwarz, deinem Portfolio als Ganzes.
-Darunter drei Regler, darunter die Tabelle mit **ΔAnteile** (wie viele Stücke du
-kaufen oder verkaufen müsstest) und **ΔAllok.** (wie sich der Anteil am Depot
-verschiebt).
+At the top, the chart with every position and, in black, your portfolio as a
+whole. Below it three sliders, and below those the table with **ΔUnits** (how
+many shares you would buy or sell) and **ΔAlloc** (how the share of the
+portfolio shifts).
 
-Die drei Regler mischen stufenlos zwischen deinem heutigen Depot und drei
-Zielportfolios:
+The three sliders blend continuously between your portfolio as it is today and
+three target portfolios:
 
-| Regler | Sucht | Führt typischerweise zu |
+| Slider | Looks for | Typically leads to |
 | --- | --- | --- |
-| **Minimale Varianz** | die ruhigste Mischung | Übergewicht für schwankungsarme Papiere |
-| **Max. Sharpe Ratio** | den besten Ertrag *je Risiko* | einer Mischung, die Ertrag und Ruhe abwägt |
-| **Min. Drawdown** | den kleinsten zwischenzeitlichen Einbruch | Übergewicht für Papiere, die nie tief fielen |
+| **Minimum Variance** | the calmest mixture | overweighting low-volatility papers |
+| **Max Sharpe Ratio** | the best return *per unit of risk* | a mixture weighing return against calm |
+| **Min Drawdown** | the smallest interim decline | overweighting papers that never fell far |
 
-Zusammen ergeben die drei höchstens 100 %; ziehst du einen hoch, weichen die
-anderen automatisch zurück. Was an 100 % fehlt, bleibt dein jetziges Depot. Alle
-Regler auf 0 heißt also „nichts ändern", ein Regler auf 100 heißt „ganz auf dieses
-Ziel". Der Gesamtwert des Depots bleibt dabei in jeder Stellung gleich &ndash;
-umgeschichtet, nicht ein- oder ausgezahlt.
+Together the three add up to at most 100 %; pull one up and the others give way
+automatically. Whatever is missing from 100 % stays your current portfolio. All
+sliders at 0 therefore means "change nothing", one slider at 100 means "go fully
+for this objective". The total value of the portfolio stays the same in every
+position &ndash; reallocated, not paid in or out.
 
-**Der Zoom wählt den Zeitraum, über den gerechnet wird.** Ziehe im Chart
-waagerecht: nach links verkürzt das Fenster, nach rechts verlängert es. Das
-Fenster endet immer am aktuellen Rand, du wählst also nur, wie weit zurück
-geschaut wird. Nach jedem Zoom rechnet die App neu &ndash; ein Papier kann über
-zehn Jahre glänzend und über sechs Monate schwach aussehen, und der Optimierer
-zeigt dir genau das.
+**The zoom selects the period being computed on.** Drag horizontally in the
+chart: to the left shortens the window, to the right lengthens it. The window
+always ends at the current edge, so you only choose how far back to look. After
+every zoom the app recomputes &ndash; a paper can look brilliant over ten years
+and weak over six months, and the optimiser shows you exactly that.
 
-### Wenn dich ein Papier nicht interessiert
+### When a paper should be left alone
 
-Der Schalter **Fixiert** nimmt eine Position aus allen drei Optimierungen heraus:
-Sie behält ihre Stückzahl, ihr Wert wird nicht umverteilt, und sie beeinflusst
-auch die Rechnung der anderen nicht. Sinnvoll für alles, was du ohnehin nicht
-anfassen willst, oder für einen Geldmarktfonds &ndash; der gewinnt sonst fast
-jeden Vergleich, weil er kaum schwankt und nie einbricht.
+The **Fixed** switch takes a position out of all three optimisations: it keeps
+its number of shares, its value is not redistributed, and it does not influence
+the computation for the others either. Useful for anything you do not intend to
+touch anyway, or for a money market fund &ndash; which otherwise wins almost
+every comparison, because it barely fluctuates and never drops.
 
-Der Schalter gilt für die laufende Sitzung und wird bewusst nicht gespeichert:
-Nach einem Neustart der App nehmen wieder alle Positionen teil.
+The switch applies to the current session and is deliberately not saved: after a
+restart of the app, every position takes part again.
 
-## Selbst bauen
+## Building it yourself
 
 ```bash
 git clone https://github.com/Archimedes79/Portfolio_Optimizer_Classic.git
@@ -174,47 +172,44 @@ cd Portfolio_Optimizer_Classic
 ./gradlew assembleRelease      # Windows: gradlew.bat assembleRelease
 ```
 
-Die fertige APK liegt danach unter `app/build/outputs/apk/release/`.
-Benötigt werden JDK 21 zum Bauen und das Android SDK, Platform 36 mit
-Minor-API-Level 36.1; Android Studio bringt beides mit. Die Unit-Tests laufen
-mit `./gradlew testDebugUnitTest`.
+The finished APK is then in `app/build/outputs/apk/release/`. You need JDK 21
+to build and the Android SDK, platform 36 with minor API level 36.1; Android
+Studio ships both. The unit tests run with `./gradlew testDebugUnitTest`.
 
-Das App-Icon ist als Adaptive Icon in
-`app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml` definiert, seine Ebenen
-liegen in `app/src/main/res/drawable/ic_launcher_*.xml`. Die Rastergrafiken für
-ältere Android-Versionen erzeugt `python3 tools/generate_icons.py` aus derselben
-Geometrie neu; das Skript benötigt Pillow und schreibt zusätzlich
-`docs/icon-512.png`, erzeugt aber kein `ic_launcher_monochrome.xml`.
+The app icon is defined as an adaptive icon in
+`app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml`, its layers live in
+`app/src/main/res/drawable/ic_launcher_*.xml`. The raster graphics for older
+Android versions are regenerated from the same geometry by
+`python3 tools/generate_icons.py`; the script needs Pillow and also writes
+`docs/icon-512.png`, but it does not produce `ic_launcher_monochrome.xml`.
 
-## Technik
+## Technology
 
-Java, keine Compose-Abhängigkeit, drei Activities.
+Java, no Compose dependency, three activities.
 
 | | |
 | --- | --- |
-| Mathematik | [Apache Commons Math 3](https://commons.apache.org/proper/commons-math/) (Kovarianzmatrix, BOBYQA) |
+| Mathematics | [Apache Commons Math 3](https://commons.apache.org/proper/commons-math/) (covariance matrix, BOBYQA) |
 | Charts | [MPAndroidChart](https://github.com/PhilJay/MPAndroidChart) |
-| Persistenz | [Gson](https://github.com/google/gson) &rarr; `filesDir/portfolio.json` |
-| Kursdaten | öffentliche Endpunkte von Yahoo Finance, Monatswerte, linear auf Tageswerte interpoliert; Werte vor dem ersten und nach dem letzten Stützpunkt werden geklemmt, nicht extrapoliert |
-| Währung | automatische Umrechnung in EUR über das jeweilige FX-Paar (inkl. GBp); schlägt der Abruf des Wechselkurses fehl, wird der Preis unverändert übernommen |
+| Persistence | [Gson](https://github.com/google/gson) &rarr; `filesDir/portfolio.json` |
+| Price data | public Yahoo Finance endpoints, monthly values interpolated linearly onto days; values before the first and after the last support point are clamped, not extrapolated |
+| Currency | automatic conversion to EUR via the respective FX pair (including GBp); if fetching the exchange rate fails, the price is taken unchanged |
 
-## Hintergrund
+## Background
 
-Entstanden als Vibe-Coding-Experiment &ndash; eines, das tatsächlich funktioniert.
+Started as a vibe-coding experiment &ndash; one that actually works.
 
-## Haftungsausschluss
+## Disclaimer
 
-Diese App ist ein Lern- und Analysewerkzeug. Ihre Ergebnisse sind **keine
-Anlageberatung**, keine Empfehlung und kein Angebot zum Kauf oder Verkauf von
-Finanzinstrumenten. Die Kursdaten stammen aus einer inoffiziellen, öffentlich
-erreichbaren Quelle, können verzögert, unvollständig oder falsch sein und
-jederzeit ausfallen. Jede Anlageentscheidung und deren Folgen liegen allein bei
-dir.
+This app is a learning and analysis tool. Its results are **not investment
+advice**, not a recommendation, and not an offer to buy or sell financial
+instruments. The price data comes from an unofficial, publicly reachable source;
+it may be delayed, incomplete or wrong, and it may disappear at any time. Every
+investment decision and its consequences are yours alone.
 
-## Lizenz
+## Licence
 
-Proprietär, Quellcode einsehbar. Lesen, private Nutzung und Selbstbauen sind
-erlaubt; Weiterverbreitung und kommerzielle Nutzung nicht ohne vorherige
-schriftliche Genehmigung. Details in [LICENSE](LICENSE), Hinweise zu den
-verwendeten Bibliotheken in
+Proprietary, source-available. Reading, private use and building it yourself are
+permitted; redistribution and commercial use are not, without prior written
+permission. Details in [LICENSE](LICENSE), notes on the libraries used in
 [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
