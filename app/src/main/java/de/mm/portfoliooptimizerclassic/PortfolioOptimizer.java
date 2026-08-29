@@ -36,6 +36,39 @@ import java.util.List;
  * is never redistributed.  Only the remaining non-fixed budget is optimised.
  * This prevents constant-value or strategic positions from being over-weighted
  * by variance or drawdown minimisation.</p>
+ *
+ * <h2>How a slider position becomes a number of shares</h2>
+ *
+ * <p>Three steps, in this order. Each one is a separate method so that the
+ * boundary between them stays visible.</p>
+ *
+ * <ol>
+ *   <li><b>Optimise the tradable part only.</b> {@link #securitiesToMatrix} picks
+ *       the positions that may move - not fixed, and carrying a usable price -
+ *       and builds the price matrix from them alone. Each strategy then returns
+ *       target <em>weights</em> over exactly those positions, summing to 1. A
+ *       position that is excluded never appears in that matrix, so it cannot
+ *       influence a covariance, a Sharpe ratio or a drawdown either.</li>
+ *
+ *   <li><b>Expand to a target vector over the whole portfolio.</b>
+ *       {@link #mapResultsBack} turns those weights into share counts against the
+ *       budget the tradable positions currently hold, and writes them back at
+ *       their original indices. The excluded positions are already sitting in the
+ *       vector at their present quantity - every target vector starts as a copy of
+ *       the current one - so each of the three vectors describes the complete
+ *       portfolio: optimised where allowed, untouched everywhere else. All three
+ *       therefore carry the same total value as the portfolio has today.</li>
+ *
+ *   <li><b>Blend against the current portfolio.</b>
+ *       {@link #getBlendedQuantities} forms
+ *       {@code (1-v-s-m)*current + v*GMV + s*Sharpe + m*MinDD}. The three slider
+ *       percentages refer to the portfolio as a whole and the caller keeps their
+ *       sum at or below 100%; the remainder stays in the current portfolio, which
+ *       is what makes "leave everything alone" and "fully optimised" the two ends
+ *       of one continuum. Because all four vectors have the same total value, so
+ *       does every blend of them - the check in that method only ever reports a
+ *       bug, it never corrects a result.</li>
+ * </ol>
  */
 public class PortfolioOptimizer {
     private static final String TAG = "PortfolioOptimizer";
